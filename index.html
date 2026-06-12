@@ -456,7 +456,11 @@ main{padding:18px 16px;max-width:1280px;margin:0 auto}
     <h2>📝 Nuevo pedido <button class="x" onclick="cerrar('ovNuevo')">✕</button></h2>
     <form id="formNuevo" onsubmit="guardarPedido(event)">
       <div class="form-grid">
-        <div class="fld full"><label>Cliente <span class="req">*</span></label><input name="cliente" required placeholder="Ej: Ferretería El Constructor"></div>
+        <div class="fld full"><label>Cliente <span class="req">*</span></label>
+          <input name="cliente" required placeholder="Escribe o elige un cliente guardado" list="listaClientes" autocomplete="off" oninput="autofillCliente(this.value)">
+          <datalist id="listaClientes"></datalist>
+          <p class="mini-help">Los clientes se guardan solos: al elegir uno ya registrado se llenan sus datos automáticamente.</p>
+        </div>
         <div class="fld"><label>Sucursal</label><input name="sucursal" placeholder="Ej: Centro"></div>
         <div class="fld"><label>Zona <span class="req">*</span></label><select name="zona" id="selZonaNuevo" required></select></div>
         <div class="fld full"><label>Dirección de entrega <span class="req">*</span></label><input name="direccion" required placeholder="Calle, número, referencia"></div>
@@ -678,6 +682,16 @@ async function cambiarUsuario(u){
   renderTabs();renderVista();renderNotifs();
   toast(esAdmin()?'Modo Gerencia / Administrador':'Modo Vendedores');
 }
+function aplicarCandado(){
+  /* si llegó una clave desde la nube y esta sesión no la ha ingresado, salir de Gerencia */
+  if(DB.claveAdmin&&usuario==='admin'&&sessionStorage.getItem('adminOk')!==DB.claveAdmin){
+    usuario='vendedor';
+    document.getElementById('roleSelect').value='vendedor';
+    if(vista==='dashboard')vista='pedidos';
+    renderTabs();renderVista();renderNotifs();
+    toast('🔒 El modo Gerencia ahora requiere clave');
+  }
+}
 async function guardarClave(){
   const actualInp=document.getElementById('clvActual');
   if(DB.claveAdmin&&await hashClave(actualInp?actualInp.value:'')!==DB.claveAdmin){toast('⚠️ La clave actual no coincide');return;}
@@ -730,10 +744,31 @@ function enviarWhatsApp(p){
 }
 
 /* ================= ACCIONES DE PEDIDO ================= */
+function clientesGuardados(){
+  /* nombre → datos del pedido más reciente de ese cliente */
+  const m={};
+  [...DB.pedidos].sort((a,b)=>a.fechaPedido<b.fechaPedido?-1:1).forEach(p=>{m[p.cliente]=p});
+  return m;
+}
+function autofillCliente(v){
+  const m=clientesGuardados();
+  const nombre=Object.keys(m).find(k=>k.toLowerCase()===v.trim().toLowerCase());
+  if(!nombre)return;
+  const p=m[nombre];
+  const f=document.getElementById('formNuevo');
+  f.sucursal.value=p.sucursal||'';
+  if(DB.zonas.includes(p.zona))f.zona.value=p.zona;
+  f.direccion.value=p.direccion||'';
+  f.tel1.value=p.tel1||'';
+  f.tel2.value=p.tel2||'';
+  toast('📋 Datos de "'+nombre+'" cargados');
+}
 function abrirNuevo(){
   document.getElementById('selZonaNuevo').innerHTML=DB.zonas.map(z=>`<option>${z}</option>`).join('');
   const sv=document.getElementById('selVendNuevo');
   sv.innerHTML=DB.vendedores.map(v=>`<option>${v}</option>`).join('');
+  document.getElementById('listaClientes').innerHTML=
+    Object.keys(clientesGuardados()).sort().map(c=>`<option value="${c.replace(/"/g,'&quot;')}">`).join('');
   document.getElementById('formNuevo').reset();
   document.querySelector('#formNuevo [name=fechaPrometida]').min=iso(hoy());
   abrir('ovNuevo');
@@ -1331,7 +1366,9 @@ async function nubeSync(inicial){
         renderNotifs();
       }
     }
-    nubeEstado='ok';nubeUltimoError='';nubeChipRender();return true;
+    nubeEstado='ok';nubeUltimoError='';nubeChipRender();
+    aplicarCandado();
+    return true;
   }catch(e){nubeEstado='error';nubeUltimoError=e.message||String(e);nubeChipRender();return false;}
 }
 async function nubePush(){
@@ -1398,7 +1435,7 @@ function init(){
     history.replaceState(null,'',location.pathname+location.search);
   }
   document.getElementById('roleSelect').innerHTML=
-    `<option value="admin">👑 Gerencia</option><option value="vendedor">👤 Vendedores</option>`;
+    `<option value="admin">Gerencia</option><option value="vendedor">Vendedores</option>`;
   /* con clave activa y sin desbloquear en esta sesión, iniciar como Vendedores */
   if(DB.claveAdmin&&sessionStorage.getItem('adminOk')!==DB.claveAdmin)usuario='vendedor';
   document.getElementById('roleSelect').value=usuario;
