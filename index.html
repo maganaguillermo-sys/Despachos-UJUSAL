@@ -525,6 +525,7 @@ main{padding:18px 16px;max-width:1280px;margin:0 auto}
     <div class="fld"><label>URL del proyecto</label><input id="cfgUrl" placeholder="https://xxxx.supabase.co"></div>
     <div class="fld" style="margin-top:10px"><label>Clave anon (public)</label><input id="cfgKey" placeholder="eyJhbGciOi..."></div>
     <button class="btn btn-yellow btn-block" style="margin-top:12px" onclick="nubeConectar()">☁️ Conectar</button>
+    <button class="btn btn-dark btn-block hidden" id="cfgInvitar" style="margin-top:8px" onclick="copiarInvitacion()">🔗 Copiar link de invitación (conecta la nube automáticamente)</button>
     <button class="btn btn-ghost btn-block hidden" id="cfgDesc" style="margin-top:8px" onclick="nubeDesconectar()">Desconectar nube (volver a datos locales)</button>
 
     <details style="margin-top:16px;font-size:13.5px;color:var(--metal2)">
@@ -1250,6 +1251,7 @@ function renderConfig(){
   document.getElementById('cfgUrl').value=c?c.url:'';
   document.getElementById('cfgKey').value=c?c.key:'';
   document.getElementById('cfgDesc').classList.toggle('hidden',!c);
+  document.getElementById('cfgInvitar').classList.toggle('hidden',!c||location.protocol==='file:');
   const cb=document.getElementById('claveBox');
   if(!esAdmin()){
     cb.innerHTML='<p class="mini-help" style="margin-bottom:16px">Solo Gerencia puede crear o cambiar la clave.</p>';
@@ -1285,6 +1287,13 @@ async function nubeConectar(){
       (nubeUltimoError||'sin respuesta del servidor (¿URL correcta? ¿hay internet?)')+'</span>';
     toast('⚠️ No se pudo conectar. Mira el detalle del error arriba.');
   }
+}
+function copiarInvitacion(){
+  const c=nubeCfg();if(!c)return;
+  const link=location.origin+location.pathname+'#nube='+btoa(JSON.stringify(c));
+  navigator.clipboard.writeText(link)
+    .then(()=>toast('🔗 Link copiado. Quien lo abra queda conectado a la nube automáticamente.'))
+    .catch(()=>prompt('Copia este link:',link));
 }
 function nubeDesconectar(){
   localStorage.removeItem('nubeCfg');nubeEstado='off';
@@ -1380,6 +1389,14 @@ document.addEventListener('click',e=>{
 });
 
 function init(){
+  /* link de invitación: #nube=... trae la configuración de la nube incluida */
+  if(location.hash.startsWith('#nube=')){
+    try{
+      const cfg=JSON.parse(atob(location.hash.slice(6)));
+      if(cfg.url&&cfg.key)localStorage.setItem('nubeCfg',JSON.stringify({url:cfg.url,key:cfg.key}));
+    }catch(e){}
+    history.replaceState(null,'',location.pathname+location.search);
+  }
   document.getElementById('roleSelect').innerHTML=
     `<option value="admin">👑 Gerencia</option><option value="vendedor">👤 Vendedores</option>`;
   /* con clave activa y sin desbloquear en esta sesión, iniciar como Vendedores */
