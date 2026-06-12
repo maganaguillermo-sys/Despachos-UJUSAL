@@ -349,6 +349,9 @@ main{padding:18px 16px;max-width:1280px;margin:0 auto}
 .nube-chip.ok{color:var(--verde);border-color:rgba(31,157,85,.4);background:rgba(31,157,85,.08)}
 .nube-chip.err{color:var(--rojo);border-color:rgba(224,49,49,.4);background:rgba(224,49,49,.08)}
 .cfg-sql{background:var(--panel2);border:1px solid var(--borde);border-radius:10px;padding:10px;font-size:11.5px;overflow-x:auto;margin:8px 0;white-space:pre}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.chip-item{display:inline-flex;align-items:center;gap:4px;background:var(--panel2);border:1px solid var(--borde);border-radius:18px;padding:6px 6px 6px 12px;font-size:13px;font-weight:600}
+.chip-item button{background:none;border:none;color:var(--rojo);cursor:pointer;font-size:13px;font-weight:700;padding:2px 6px}
 </style>
 </head>
 <body>
@@ -463,7 +466,7 @@ main{padding:18px 16px;max-width:1280px;margin:0 auto}
         <div class="fld"><label>Teléfono principal <span class="req">*</span></label><input name="tel1" required placeholder="7777-0000"></div>
         <div class="fld"><label>Teléfono secundario</label><input name="tel2" placeholder="Opcional"></div>
         <div class="fld"><label>Fecha prometida al cliente <span class="req">*</span></label><input name="fechaPrometida" type="date" required></div>
-        <div class="fld"><label>Vendedor</label><select name="vendedor" id="selVendNuevo"></select></div>
+        <div class="fld"><label>Vendedor responsable <span class="req">*</span></label><select name="vendedor" id="selVendNuevo" required></select></div>
         <div class="fld full"><label>Observaciones</label><textarea name="observaciones" rows="2" placeholder="Notas para el despacho..."></textarea></div>
       </div>
       <p class="mini-help">La fecha prometida activa las alertas automáticas 🟢🟡🔴.</p>
@@ -499,6 +502,20 @@ main{padding:18px 16px;max-width:1280px;margin:0 auto}
     </div>
     <p class="mini-help">El respaldo descarga un archivo .json con todos los pedidos. Al importarlo se reemplazan los datos actuales.</p>
     <button class="btn btn-ghost btn-sm" style="color:var(--rojo);border-color:rgba(224,49,49,.4);margin:8px 0 18px" onclick="borrarTodo()">🗑️ Borrar todos los datos (empezar de cero)</button>
+
+    <div class="chart-title">👥 Vendedores</div>
+    <div class="chips" id="listaVend"></div>
+    <div style="display:flex;gap:8px;margin:8px 0 16px">
+      <input id="nuevoVend" placeholder="Nombre del nuevo vendedor" style="flex:1;background:var(--panel);border:1px solid var(--borde);color:var(--blanco);border-radius:10px;padding:11px 12px;font-size:14px;font-family:inherit">
+      <button class="btn btn-yellow btn-sm" onclick="agregarItem('v')">＋ Agregar</button>
+    </div>
+
+    <div class="chart-title">📍 Zonas</div>
+    <div class="chips" id="listaZonas"></div>
+    <div style="display:flex;gap:8px;margin:8px 0 18px">
+      <input id="nuevaZona" placeholder="Nombre de la nueva zona" style="flex:1;background:var(--panel);border:1px solid var(--borde);color:var(--blanco);border-radius:10px;padding:11px 12px;font-size:14px;font-family:inherit">
+      <button class="btn btn-yellow btn-sm" onclick="agregarItem('z')">＋ Agregar</button>
+    </div>
 
     <div class="chart-title">☁️ Nube — datos compartidos entre todos (Supabase)</div>
     <div id="cfgEstado" style="font-size:13.5px;margin-bottom:10px;color:var(--metal2)"></div>
@@ -536,8 +553,8 @@ create policy "acceso_app" on notifs for all using (true) with check (true);</pr
 <script>
 /* ================= DATOS ================= */
 const ESTADOS=['Pendiente de programación','Programado','En despacho','Entregado'];
-const ZONAS=['Santa Ana','San Salvador','Occidente','Oriente','La Libertad','San Miguel'];
-const VENDEDORES=['Carlos Ramírez','Ana López','Miguel Torres','Sofía Hernández'];
+const ZONAS_DEF=['Santa Ana','San Salvador','Occidente','Oriente','La Libertad','San Miguel'];
+const VEND_DEF=['Carlos Ramírez','Ana López','Miguel Torres','Sofía Hernández'];
 const PRIOR_PESO={Alta:3,Media:2,Baja:1};
 
 const hoy=()=>{const d=new Date();d.setHours(0,0,0,0);return d};
@@ -579,12 +596,14 @@ function semilla(){
 
 let DB=JSON.parse(localStorage.getItem('despachosPro')||'null');
 if(!DB){DB={pedidos:semilla(),notifs:[],seq:1017};guardar();}
+if(!Array.isArray(DB.zonas)||!DB.zonas.length)DB.zonas=[...ZONAS_DEF];
+if(!Array.isArray(DB.vendedores)||!DB.vendedores.length)DB.vendedores=[...VEND_DEF];
 function guardar(){localStorage.setItem('despachosPro',JSON.stringify(DB));nubeProgramarPush();}
 
-let usuario='admin'; // 'admin' o nombre de vendedor
+let usuario='admin'; // 'admin' (gerencia) o 'vendedor' (cuenta compartida del equipo)
 let vista='dashboard';
 const esAdmin=()=>usuario==='admin';
-const misPedidos=()=>esAdmin()?DB.pedidos:DB.pedidos.filter(p=>p.vendedor===usuario);
+const misPedidos=()=>DB.pedidos;
 
 /* ================= ALERTAS ================= */
 function alerta(p){
@@ -639,7 +658,7 @@ function cambiarUsuario(u){
   document.getElementById('view-dashboard').classList.toggle('active',vista==='dashboard');
   document.getElementById('view-pedidos').classList.toggle('active',vista==='pedidos');
   renderTabs();renderVista();renderNotifs();
-  toast(esAdmin()?'Modo Administrador':'Sesión: '+u+' (vendedor)');
+  toast(esAdmin()?'Modo Gerencia / Administrador':'Modo Vendedores');
 }
 
 /* ================= NOTIFICACIONES ================= */
@@ -647,7 +666,7 @@ function notificar(para,texto){
   DB.notifs.unshift({id:'n'+Date.now()+'-'+Math.floor(Math.random()*1e6),para,texto,fecha:new Date().toLocaleString('es-SV',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}),leida:false});
   guardar();renderNotifs();
 }
-function notifsDe(){return DB.notifs.filter(n=>n.para===usuario||(esAdmin()&&n.para==='admin'))}
+function notifsDe(){return DB.notifs.filter(n=>esAdmin()?n.para==='admin':n.para==='vendedor')}
 function renderNotifs(){
   const ns=notifsDe();
   const noLeidas=ns.filter(n=>!n.leida).length;
@@ -669,17 +688,16 @@ function toast(msg){
 /* WhatsApp */
 function enviarWhatsApp(p){
   const msg=`Su pedido #${p.numero} ha sido programado para despacho el ${fmtD(p.fechaProgramada)}.`;
-  notificar(p.vendedor,`📱 WhatsApp enviado a ${p.cliente} (${p.tel1}): "${msg}"`);
+  notificar('vendedor',`📱 WhatsApp enviado a ${p.cliente} (${p.tel1}): "${msg}"`);
   const tel=p.tel1.replace(/\D/g,'');
   window.open(`https://wa.me/503${tel}?text=${encodeURIComponent(msg)}`,'_blank');
 }
 
 /* ================= ACCIONES DE PEDIDO ================= */
 function abrirNuevo(){
-  document.getElementById('selZonaNuevo').innerHTML=ZONAS.map(z=>`<option>${z}</option>`).join('');
+  document.getElementById('selZonaNuevo').innerHTML=DB.zonas.map(z=>`<option>${z}</option>`).join('');
   const sv=document.getElementById('selVendNuevo');
-  if(esAdmin()){sv.innerHTML=VENDEDORES.map(v=>`<option>${v}</option>`).join('');sv.disabled=false;}
-  else{sv.innerHTML=`<option>${usuario}</option>`;sv.disabled=true;}
+  sv.innerHTML=DB.vendedores.map(v=>`<option>${v}</option>`).join('');
   document.getElementById('formNuevo').reset();
   document.querySelector('#formNuevo [name=fechaPrometida]').min=iso(hoy());
   abrir('ovNuevo');
@@ -694,7 +712,7 @@ function guardarPedido(ev){
     fechaPedido:iso(hoy()),
     cliente:f.get('cliente'),sucursal:f.get('sucursal')||'',zona:f.get('zona'),
     direccion:f.get('direccion'),monto:parseFloat(f.get('monto')),
-    prioridad:f.get('prioridad'),vendedor:esAdmin()?f.get('vendedor'):usuario,
+    prioridad:f.get('prioridad'),vendedor:f.get('vendedor'),
     tel1:f.get('tel1'),tel2:f.get('tel2')||'',
     observaciones:f.get('observaciones')||'',
     fechaPrometida:f.get('fechaPrometida'),
@@ -709,8 +727,8 @@ function guardarPedido(ev){
 function programarPedido(id,fecha){
   const p=DB.pedidos.find(x=>x.id===id);if(!p||!fecha)return;
   p.fechaProgramada=fecha;p.estado='Programado';guardar();
-  notificar(p.vendedor,`Tu pedido ${p.numero} (${p.cliente}) fue programado para despacho el ${fmtD(fecha)}.`);
-  notificar(p.vendedor,`📱 WhatsApp enviado a ${p.cliente} (${p.tel1}): "Su pedido #${p.numero} ha sido programado para despacho el ${fmtD(fecha)}."`);
+  notificar('vendedor',`El pedido ${p.numero} (${p.cliente}) fue programado para despacho el ${fmtD(fecha)}.`);
+  notificar('vendedor',`📱 WhatsApp enviado a ${p.cliente} (${p.tel1}): "Su pedido #${p.numero} ha sido programado para despacho el ${fmtD(fecha)}."`);
   toast(`🚚 ${p.numero} programado para ${fmtD(fecha)} · WhatsApp enviado`);
   renderVista();
 }
@@ -721,7 +739,7 @@ function cambiarEstado(id,nuevo){
   if(nuevo!=='Entregado')p.fechaEntrega=null;
   if(nuevo==='Pendiente de programación'){p.fechaProgramada=null;}
   guardar();
-  notificar(p.vendedor,`Pedido ${p.numero} (${p.cliente}) cambió a estado: ${nuevo}.`);
+  notificar('vendedor',`Pedido ${p.numero} (${p.cliente}) cambió a estado: ${nuevo}.`);
   toast(`${p.numero} → ${nuevo}`);
   renderVista();
   if(document.getElementById('ovDetalle').classList.contains('open'))verDetalle(id);
@@ -795,9 +813,9 @@ function verDetalle(id){
 
 /* ================= VISTA PEDIDOS ================= */
 function llenarFiltros(){
-  document.getElementById('fZona').innerHTML='<option value="">Zona: todas</option>'+ZONAS.map(z=>`<option>${z}</option>`).join('');
+  document.getElementById('fZona').innerHTML='<option value="">Zona: todas</option>'+DB.zonas.map(z=>`<option>${z}</option>`).join('');
   document.getElementById('fEstado').innerHTML='<option value="">Estado: todos</option>'+ESTADOS.map(e=>`<option>${e}</option>`).join('');
-  document.getElementById('fVendedor').innerHTML='<option value="">Vendedor: todos</option>'+VENDEDORES.map(v=>`<option>${v}</option>`).join('');
+  document.getElementById('fVendedor').innerHTML='<option value="">Vendedor: todos</option>'+DB.vendedores.map(v=>`<option>${v}</option>`).join('');
 }
 function pedidosFiltrados(){
   const q=document.getElementById('fBuscar').value.toLowerCase();
@@ -872,8 +890,8 @@ function confirmarZona(){
   const pend=DB.pedidos.filter(p=>p.zona===zonaActiva&&p.estado==='Pendiente de programación');
   pend.forEach(p=>{
     p.fechaProgramada=f;p.estado='Programado';
-    notificar(p.vendedor,`Tu pedido ${p.numero} (${p.cliente}) fue programado para despacho el ${fmtD(f)}.`);
-    notificar(p.vendedor,`📱 WhatsApp enviado a ${p.cliente} (${p.tel1}): "Su pedido #${p.numero} ha sido programado para despacho el ${fmtD(f)}."`);
+    notificar('vendedor',`El pedido ${p.numero} (${p.cliente}) fue programado para despacho el ${fmtD(f)}.`);
+    notificar('vendedor',`📱 WhatsApp enviado a ${p.cliente} (${p.tel1}): "Su pedido #${p.numero} ha sido programado para despacho el ${fmtD(f)}."`);
   });
   guardar();cerrar('ovZona');
   toast(`🚚 ${pend.length} pedidos de ${zonaActiva} programados para ${fmtD(f)}`);
@@ -1081,8 +1099,8 @@ function renderDashboard(){
   const rank=(obj,money)=>`<ol class="rank-list">${Object.entries(obj).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([k,v],i)=>
     `<li><span class="rank-pos">${i+1}</span>${k}<span class="rk-val">${money?fmt$(v):v}</span></li>`).join('')}</ol>`;
   const cumpVend={},cumpZona={};
-  VENDEDORES.forEach(v=>{const e=ent.filter(p=>p.vendedor===v);if(e.length)cumpVend[v]=Math.round(e.filter(p=>p.fechaEntrega<=p.fechaPrometida).length/e.length*100)});
-  ZONAS.forEach(z=>{const e=ent.filter(p=>p.zona===z);if(e.length)cumpZona[z]=Math.round(e.filter(p=>p.fechaEntrega<=p.fechaPrometida).length/e.length*100)});
+  DB.vendedores.forEach(v=>{const e=ent.filter(p=>p.vendedor===v);if(e.length)cumpVend[v]=Math.round(e.filter(p=>p.fechaEntrega<=p.fechaPrometida).length/e.length*100)});
+  DB.zonas.forEach(z=>{const e=ent.filter(p=>p.zona===z);if(e.length)cumpZona[z]=Math.round(e.filter(p=>p.fechaEntrega<=p.fechaPrometida).length/e.length*100)});
   document.getElementById('ranksGrid').innerHTML=`
     <div class="panel"><div class="chart-title">Vendedores por monto pendiente</div>${rank(suma(noEnt,'vendedor'),true)}</div>
     <div class="panel"><div class="chart-title">Zonas con más pedidos</div>${rank(cuenta(ps,'zona'))}</div>
@@ -1114,7 +1132,9 @@ function importarJSON(input){
     try{
       const d=JSON.parse(r.result);
       if(!Array.isArray(d.pedidos))throw new Error('formato');
-      DB={pedidos:d.pedidos,notifs:Array.isArray(d.notifs)?d.notifs:[],seq:d.seq||1000};
+      DB={pedidos:d.pedidos,notifs:Array.isArray(d.notifs)?d.notifs:[],seq:d.seq||1000,
+          vendedores:Array.isArray(d.vendedores)&&d.vendedores.length?d.vendedores:DB.vendedores,
+          zonas:Array.isArray(d.zonas)&&d.zonas.length?d.zonas:DB.zonas};
       localStorage.setItem('despachosPro',JSON.stringify(DB));
       /* si hay nube: limpiarla primero para que no queden pedidos viejos mezclados */
       nubeBorrarRemoto().then(()=>nubePush());
@@ -1153,7 +1173,35 @@ function nubeChipRender(){
   el.textContent=!c?'💾 Local':nubeEstado==='ok'?'☁️ Nube':nubeEstado==='error'?'⚠️ Sin conexión':'☁️ Conectando…';
   el.className='nube-chip '+(c?(nubeEstado==='ok'?'ok':nubeEstado==='error'?'err':''):'');
 }
-function abrirConfig(){renderConfig();abrir('ovConfig');}
+function abrirConfig(){renderConfig();renderListas();abrir('ovConfig');}
+/* ===== vendedores y zonas editables ===== */
+function renderListas(){
+  const mk=(arr,tipo)=>arr.map((n,i)=>`<span class="chip-item">${n}<button title="Quitar" onclick="quitarItem('${tipo}',${i})">✕</button></span>`).join('')||'<span class="mini-help">Vacío</span>';
+  document.getElementById('listaVend').innerHTML=mk(DB.vendedores,'v');
+  document.getElementById('listaZonas').innerHTML=mk(DB.zonas,'z');
+}
+function agregarItem(tipo){
+  const inp=document.getElementById(tipo==='v'?'nuevoVend':'nuevaZona');
+  const val=inp.value.trim();if(!val)return;
+  const arr=tipo==='v'?DB.vendedores:DB.zonas;
+  if(arr.some(x=>x.toLowerCase()===val.toLowerCase())){toast('⚠️ Ya existe');return;}
+  arr.push(val);inp.value='';
+  guardar();renderListas();refrescarSelects();
+  toast('✓ Agregado: '+val);
+}
+function quitarItem(tipo,i){
+  const arr=tipo==='v'?DB.vendedores:DB.zonas;
+  const n=arr[i];
+  if(tipo==='v'&&DB.pedidos.some(p=>p.vendedor===n)){toast('⚠️ No se puede quitar: '+n+' tiene pedidos asignados');return;}
+  if(tipo==='z'&&DB.pedidos.some(p=>p.zona===n)){toast('⚠️ No se puede quitar: hay pedidos en esa zona');return;}
+  if(!confirm('¿Quitar "'+n+'"?'))return;
+  arr.splice(i,1);
+  guardar();renderListas();refrescarSelects();
+}
+function refrescarSelects(){
+  /* el selector de usuario es fijo (Gerencia / Vendedores); solo refrescar filtros y vistas */
+  llenarFiltros();renderVista();
+}
 function renderConfig(){
   const c=nubeCfg();
   document.getElementById('cfgEstado').innerHTML=c
@@ -1200,13 +1248,21 @@ async function nubeSync(inicial){
     if(inicial&&rows.length===0&&DB.pedidos.length){
       await nubePush(); /* primera conexión y nube vacía: subir lo local */
     }else{
-      const nuevos=rows.map(x=>x.data).sort((a,b)=>String(b.numero).localeCompare(String(a.numero)));
+      const cfgRow=rows.find(x=>x.id==='__config__');
+      const nuevos=rows.filter(x=>x.id!=='__config__').map(x=>x.data).sort((a,b)=>String(b.numero).localeCompare(String(a.numero)));
       const nuevasN=rowsN.map(x=>x.data).sort((a,b)=>String(b.id).localeCompare(String(a.id)));
-      const cambio=JSON.stringify(nuevos)!==JSON.stringify(DB.pedidos)||JSON.stringify(nuevasN)!==JSON.stringify(DB.notifs);
+      const remV=cfgRow&&Array.isArray(cfgRow.data.vendedores)&&cfgRow.data.vendedores.length?cfgRow.data.vendedores:null;
+      const remZ=cfgRow&&Array.isArray(cfgRow.data.zonas)&&cfgRow.data.zonas.length?cfgRow.data.zonas:null;
+      const cambio=JSON.stringify(nuevos)!==JSON.stringify(DB.pedidos)
+        ||JSON.stringify(nuevasN)!==JSON.stringify(DB.notifs)
+        ||(remV&&JSON.stringify(remV)!==JSON.stringify(DB.vendedores))
+        ||(remZ&&JSON.stringify(remZ)!==JSON.stringify(DB.zonas));
       if(cambio||inicial){
         DB.pedidos=nuevos;DB.notifs=nuevasN;
+        if(remV)DB.vendedores=remV;
+        if(remZ)DB.zonas=remZ;
         localStorage.setItem('despachosPro',JSON.stringify(DB));
-        if(!document.querySelector('.overlay.open'))renderVista();
+        if(!document.querySelector('.overlay.open')){refrescarSelects();}
         renderNotifs();
       }
     }
@@ -1218,8 +1274,9 @@ async function nubePush(){
   pushT=null;
   try{
     const opts=b=>({method:'POST',headers:{...nubeHdr(c),Prefer:'resolution=merge-duplicates'},body:JSON.stringify(b)});
-    if(DB.pedidos.length)
-      await nubeFetch(c,'/rest/v1/pedidos?on_conflict=id',opts(DB.pedidos.map(p=>({id:p.id,data:p}))));
+    const filas=DB.pedidos.map(p=>({id:p.id,data:p}));
+    filas.push({id:'__config__',data:{vendedores:DB.vendedores,zonas:DB.zonas}});
+    await nubeFetch(c,'/rest/v1/pedidos?on_conflict=id',opts(filas));
     if(DB.notifs.length){
       await nubeFetch(c,'/rest/v1/notifs?on_conflict=id',opts(DB.notifs.slice(0,80).map(n=>({id:String(n.id),data:n}))));
     }
@@ -1245,8 +1302,9 @@ async function borrarTodo(){
   if(nubeCfg()&&!confirm('También se borrarán de la nube (para todos los dispositivos conectados). ¿Continuar?'))return;
   const ok=await nubeBorrarRemoto();
   if(!ok){toast('⚠️ No se pudo borrar en la nube: '+nubeUltimoError);return;}
-  DB={pedidos:[],notifs:[],seq:1000};
+  DB={pedidos:[],notifs:[],seq:1000,vendedores:DB.vendedores,zonas:DB.zonas};
   localStorage.setItem('despachosPro',JSON.stringify(DB));
+  nubeProgramarPush(); /* re-subir la configuración de equipo a la nube vacía */
   renderVista();renderNotifs();cerrar('ovConfig');
   toast('🗑️ Listo: la app quedó vacía para empezar de cero');
 }
@@ -1266,7 +1324,7 @@ document.addEventListener('click',e=>{
 
 function init(){
   document.getElementById('roleSelect').innerHTML=
-    `<option value="admin">👑 Administrador</option>`+VENDEDORES.map(v=>`<option value="${v}">👤 ${v}</option>`).join('');
+    `<option value="admin">👑 Gerencia</option><option value="vendedor">👤 Vendedores</option>`;
   llenarFiltros();
   renderTabs();
   calSel=iso(hoy());
