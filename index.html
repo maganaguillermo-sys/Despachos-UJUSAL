@@ -517,6 +517,9 @@ main{padding:18px 16px;max-width:1280px;margin:0 auto}
       <button class="btn btn-yellow btn-sm" onclick="agregarItem('z')">＋ Agregar</button>
     </div>
 
+    <div class="chart-title">🔒 Clave del modo Gerencia</div>
+    <div id="claveBox"></div>
+
     <div class="chart-title">☁️ Nube — datos compartidos entre todos (Supabase)</div>
     <div id="cfgEstado" style="font-size:13.5px;margin-bottom:10px;color:var(--metal2)"></div>
     <div class="fld"><label>URL del proyecto</label><input id="cfgUrl" placeholder="https://xxxx.supabase.co"></div>
@@ -652,13 +655,45 @@ function renderVista(){
   if(vista==='calendario')renderCal();
 }
 
-function cambiarUsuario(u){
+async function hashClave(t){
+  const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('despachospro:'+t));
+  return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+async function cambiarUsuario(u){
+  if(u==='admin'&&DB.claveAdmin&&sessionStorage.getItem('adminOk')!==DB.claveAdmin){
+    const c=prompt('🔒 Ingresa la clave de Gerencia:');
+    const h=c===null?null:await hashClave(c);
+    if(h!==DB.claveAdmin){
+      if(c!==null)toast('⚠️ Clave incorrecta');
+      u='vendedor';document.getElementById('roleSelect').value='vendedor';
+    }else{
+      sessionStorage.setItem('adminOk',h);
+    }
+  }
   usuario=u;
   if(!esAdmin()&&vista==='dashboard')vista='pedidos';
   document.getElementById('view-dashboard').classList.toggle('active',vista==='dashboard');
   document.getElementById('view-pedidos').classList.toggle('active',vista==='pedidos');
   renderTabs();renderVista();renderNotifs();
   toast(esAdmin()?'Modo Gerencia / Administrador':'Modo Vendedores');
+}
+async function guardarClave(){
+  const actualInp=document.getElementById('clvActual');
+  if(DB.claveAdmin&&await hashClave(actualInp?actualInp.value:'')!==DB.claveAdmin){toast('⚠️ La clave actual no coincide');return;}
+  const nueva=document.getElementById('clvNueva').value.trim();
+  if(nueva.length<4){toast('⚠️ Usa al menos 4 caracteres');return;}
+  DB.claveAdmin=await hashClave(nueva);
+  sessionStorage.setItem('adminOk',DB.claveAdmin);
+  guardar();renderConfig();
+  toast('🔒 Clave de Gerencia guardada (aplica en todos los dispositivos)');
+}
+async function quitarClave(){
+  const actualInp=document.getElementById('clvActual');
+  if(await hashClave(actualInp?actualInp.value:'')!==DB.claveAdmin){toast('⚠️ Escribe la clave actual para poder quitarla');return;}
+  delete DB.claveAdmin;
+  sessionStorage.removeItem('adminOk');
+  guardar();renderConfig();
+  toast('Clave eliminada: el modo Gerencia queda abierto');
 }
 
 /* ================= NOTIFICACIONES ================= */
@@ -1134,7 +1169,8 @@ function importarJSON(input){
       if(!Array.isArray(d.pedidos))throw new Error('formato');
       DB={pedidos:d.pedidos,notifs:Array.isArray(d.notifs)?d.notifs:[],seq:d.seq||1000,
           vendedores:Array.isArray(d.vendedores)&&d.vendedores.length?d.vendedores:DB.vendedores,
-          zonas:Array.isArray(d.zonas)&&d.zonas.length?d.zonas:DB.zonas};
+          zonas:Array.isArray(d.zonas)&&d.zonas.length?d.zonas:DB.zonas,
+          claveAdmin:d.claveAdmin||DB.claveAdmin};
       localStorage.setItem('despachosPro',JSON.stringify(DB));
       /* si hay nube: limpiarla primero para que no queden pedidos viejos mezclados */
       nubeBorrarRemoto().then(()=>nubePush());
@@ -1181,6 +1217,7 @@ function renderListas(){
   document.getElementById('listaZonas').innerHTML=mk(DB.zonas,'z');
 }
 function agregarItem(tipo){
+  if(!esAdmin()){toast('🔒 Solo Gerencia puede editar vendedores y zonas');return;}
   const inp=document.getElementById(tipo==='v'?'nuevoVend':'nuevaZona');
   const val=inp.value.trim();if(!val)return;
   const arr=tipo==='v'?DB.vendedores:DB.zonas;
@@ -1190,6 +1227,7 @@ function agregarItem(tipo){
   toast('✓ Agregado: '+val);
 }
 function quitarItem(tipo,i){
+  if(!esAdmin()){toast('🔒 Solo Gerencia puede editar vendedores y zonas');return;}
   const arr=tipo==='v'?DB.vendedores:DB.zonas;
   const n=arr[i];
   if(tipo==='v'&&DB.pedidos.some(p=>p.vendedor===n)){toast('⚠️ No se puede quitar: '+n+' tiene pedidos asignados');return;}
@@ -1212,6 +1250,21 @@ function renderConfig(){
   document.getElementById('cfgUrl').value=c?c.url:'';
   document.getElementById('cfgKey').value=c?c.key:'';
   document.getElementById('cfgDesc').classList.toggle('hidden',!c);
+  const cb=document.getElementById('claveBox');
+  if(!esAdmin()){
+    cb.innerHTML='<p class="mini-help" style="margin-bottom:16px">Solo Gerencia puede crear o cambiar la clave.</p>';
+  }else{
+    cb.innerHTML=`
+      ${DB.claveAdmin?'<div class="fld" style="margin-bottom:8px"><label>Clave actual</label><input type="password" id="clvActual" placeholder="Escribe la clave actual"></div>':''}
+      <div class="fld"><label>${DB.claveAdmin?'Nueva clave':'Crear clave'}</label><input type="password" id="clvNueva" placeholder="Mínimo 4 caracteres"></div>
+      <div style="display:flex;gap:8px;margin:10px 0 8px;flex-wrap:wrap">
+        <button class="btn btn-yellow btn-sm" onclick="guardarClave()">💾 Guardar clave</button>
+        ${DB.claveAdmin?'<button class="btn btn-ghost btn-sm" onclick="quitarClave()">Quitar clave</button>':''}
+      </div>
+      <p class="mini-help" style="margin-bottom:16px">${DB.claveAdmin
+        ?'🔒 Clave activa: la app inicia en modo Vendedores y pide la clave para entrar a Gerencia, en todos los dispositivos.'
+        :'Sin clave, cualquiera con el link puede entrar al modo Gerencia.'}</p>`;
+  }
 }
 async function nubeConectar(){
   let url=document.getElementById('cfgUrl').value.trim().replace(/\/+$/,'');
@@ -1253,14 +1306,17 @@ async function nubeSync(inicial){
       const nuevasN=rowsN.map(x=>x.data).sort((a,b)=>String(b.id).localeCompare(String(a.id)));
       const remV=cfgRow&&Array.isArray(cfgRow.data.vendedores)&&cfgRow.data.vendedores.length?cfgRow.data.vendedores:null;
       const remZ=cfgRow&&Array.isArray(cfgRow.data.zonas)&&cfgRow.data.zonas.length?cfgRow.data.zonas:null;
+      const remC=cfgRow?(cfgRow.data.claveAdmin||null):undefined;
       const cambio=JSON.stringify(nuevos)!==JSON.stringify(DB.pedidos)
         ||JSON.stringify(nuevasN)!==JSON.stringify(DB.notifs)
         ||(remV&&JSON.stringify(remV)!==JSON.stringify(DB.vendedores))
-        ||(remZ&&JSON.stringify(remZ)!==JSON.stringify(DB.zonas));
+        ||(remZ&&JSON.stringify(remZ)!==JSON.stringify(DB.zonas))
+        ||(remC!==undefined&&remC!==(DB.claveAdmin||null));
       if(cambio||inicial){
         DB.pedidos=nuevos;DB.notifs=nuevasN;
         if(remV)DB.vendedores=remV;
         if(remZ)DB.zonas=remZ;
+        if(remC!==undefined){if(remC)DB.claveAdmin=remC;else delete DB.claveAdmin;}
         localStorage.setItem('despachosPro',JSON.stringify(DB));
         if(!document.querySelector('.overlay.open')){refrescarSelects();}
         renderNotifs();
@@ -1275,7 +1331,7 @@ async function nubePush(){
   try{
     const opts=b=>({method:'POST',headers:{...nubeHdr(c),Prefer:'resolution=merge-duplicates'},body:JSON.stringify(b)});
     const filas=DB.pedidos.map(p=>({id:p.id,data:p}));
-    filas.push({id:'__config__',data:{vendedores:DB.vendedores,zonas:DB.zonas}});
+    filas.push({id:'__config__',data:{vendedores:DB.vendedores,zonas:DB.zonas,claveAdmin:DB.claveAdmin||null}});
     await nubeFetch(c,'/rest/v1/pedidos?on_conflict=id',opts(filas));
     if(DB.notifs.length){
       await nubeFetch(c,'/rest/v1/notifs?on_conflict=id',opts(DB.notifs.slice(0,80).map(n=>({id:String(n.id),data:n}))));
@@ -1298,11 +1354,12 @@ async function nubeBorrarRemoto(){
   }catch(e){nubeUltimoError=e.message||String(e);return false;}
 }
 async function borrarTodo(){
+  if(!esAdmin()){toast('🔒 Solo Gerencia puede borrar los datos');return;}
   if(!confirm('¿Borrar TODOS los pedidos y notificaciones para empezar de cero?\n\nConsejo: exporta un respaldo antes, por si acaso.'))return;
   if(nubeCfg()&&!confirm('También se borrarán de la nube (para todos los dispositivos conectados). ¿Continuar?'))return;
   const ok=await nubeBorrarRemoto();
   if(!ok){toast('⚠️ No se pudo borrar en la nube: '+nubeUltimoError);return;}
-  DB={pedidos:[],notifs:[],seq:1000,vendedores:DB.vendedores,zonas:DB.zonas};
+  DB={pedidos:[],notifs:[],seq:1000,vendedores:DB.vendedores,zonas:DB.zonas,claveAdmin:DB.claveAdmin};
   localStorage.setItem('despachosPro',JSON.stringify(DB));
   nubeProgramarPush(); /* re-subir la configuración de equipo a la nube vacía */
   renderVista();renderNotifs();cerrar('ovConfig');
@@ -1325,10 +1382,13 @@ document.addEventListener('click',e=>{
 function init(){
   document.getElementById('roleSelect').innerHTML=
     `<option value="admin">👑 Gerencia</option><option value="vendedor">👤 Vendedores</option>`;
+  /* con clave activa y sin desbloquear en esta sesión, iniciar como Vendedores */
+  if(DB.claveAdmin&&sessionStorage.getItem('adminOk')!==DB.claveAdmin)usuario='vendedor';
+  document.getElementById('roleSelect').value=usuario;
   llenarFiltros();
   renderTabs();
   calSel=iso(hoy());
-  ir('dashboard');
+  ir(esAdmin()?'dashboard':'pedidos');
   renderNotifs();
   nubeChipRender();
   if(nubeCfg())nubeSync(true);
