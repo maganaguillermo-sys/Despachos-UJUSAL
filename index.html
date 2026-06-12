@@ -1,0 +1,1281 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>DespachosPRO — Gestión de Despachos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* tema claro: --negro=fondo, --panel=tarjetas, --amarillo=color de acento (azul), --blanco=texto principal */
+  --negro:#eef1f6;
+  --negro2:#ffffff;
+  --panel:#ffffff;
+  --panel2:#e9eef7;
+  --borde:#d5dce8;
+  --metal:#7a8294;
+  --metal2:#4b5563;
+  --amarillo:#1e6ef7;
+  --amarillo2:#4d8df9;
+  --blanco:#1c2430;
+  --verde:#1f9d55;
+  --rojo:#e03131;
+  --naranja:#e8590c;
+  --azul:#1971c2;
+  --radius:14px;
+  --sombra:0 4px 14px rgba(25,50,100,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  font-family:'Inter',system-ui,sans-serif;
+  background:var(--negro);
+  color:var(--blanco);
+  font-size:15px;
+}
+h1,h2,h3,.brand,.kpi-num,.col-title{font-family:'Oswald',system-ui,sans-serif;letter-spacing:.5px}
+
+/* ===== HEADER ===== */
+header{
+  position:sticky;top:0;z-index:50;
+  background:var(--negro2);
+  border-bottom:3px solid var(--amarillo);
+  box-shadow:var(--sombra);
+  padding:10px 16px;
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+}
+.brand{display:flex;align-items:center;gap:10px;font-size:22px;font-weight:700;text-transform:uppercase}
+.brand .logo{
+  background:var(--amarillo);color:#fff;font-weight:700;
+  padding:4px 9px;border-radius:6px;font-size:20px;
+  box-shadow:0 0 0 2px #fff, 0 0 0 4px var(--amarillo);
+}
+.brand .pro{color:var(--amarillo)}
+.header-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.role-select{
+  background:var(--panel);color:var(--blanco);border:1px solid var(--borde);
+  border-radius:10px;padding:10px 12px;font-size:14px;font-family:inherit;font-weight:600;
+}
+.bell{
+  position:relative;background:var(--panel);border:1px solid var(--borde);
+  border-radius:10px;width:44px;height:44px;font-size:20px;cursor:pointer;color:var(--blanco);
+}
+.bell .dot{
+  position:absolute;top:-6px;right:-6px;background:var(--rojo);color:#fff;
+  font-size:11px;font-weight:700;min-width:20px;height:20px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;padding:0 4px;font-family:'Inter';
+}
+
+/* ===== NAV ===== */
+nav.tabs{
+  display:flex;gap:6px;padding:10px 16px;background:var(--negro2);
+  border-bottom:1px solid var(--borde);overflow-x:auto;
+}
+nav.tabs button{
+  background:transparent;border:1px solid transparent;color:var(--metal2);
+  padding:10px 16px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;
+  white-space:nowrap;font-family:inherit;display:flex;align-items:center;gap:7px;
+}
+nav.tabs button.active{background:var(--amarillo);color:#fff}
+nav.tabs button:not(.active):hover{background:var(--panel);color:var(--blanco)}
+
+/* bottom nav for mobile */
+.bottom-nav{display:none}
+@media(max-width:760px){
+  nav.tabs{display:none}
+  .bottom-nav{
+    display:flex;position:fixed;bottom:0;left:0;right:0;z-index:60;
+    background:var(--negro2);border-top:2px solid var(--amarillo);
+    box-shadow:0 -4px 14px rgba(25,50,100,.08);
+    padding:6px 4px calc(6px + env(safe-area-inset-bottom));
+  }
+  .bottom-nav button{
+    flex:1;background:none;border:none;color:var(--metal);font-size:11px;font-weight:600;
+    display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 2px;cursor:pointer;font-family:inherit;
+  }
+  .bottom-nav button .ic{font-size:21px}
+  .bottom-nav button.active{color:var(--amarillo)}
+  main{padding-bottom:90px !important}
+}
+
+main{padding:18px 16px;max-width:1280px;margin:0 auto}
+.view{display:none}
+.view.active{display:block}
+
+/* ===== BUTTONS ===== */
+.btn{
+  border:none;border-radius:12px;padding:13px 20px;font-size:15px;font-weight:700;
+  cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:8px;
+}
+.btn-yellow{background:var(--amarillo);color:#fff}
+.btn-yellow:hover{background:var(--amarillo2)}
+.btn-dark{background:var(--panel2);color:var(--blanco);border:1px solid var(--borde)}
+.btn-green{background:var(--verde);color:#fff}
+.btn-ghost{background:transparent;color:var(--metal2);border:1px solid var(--borde)}
+.btn-sm{padding:8px 13px;font-size:13px;border-radius:9px}
+.btn-block{width:100%;justify-content:center}
+.fab{
+  position:fixed;right:18px;bottom:18px;z-index:55;border-radius:50px;
+  padding:16px 22px;font-size:16px;box-shadow:0 6px 20px rgba(30,110,247,.35);
+}
+@media(max-width:760px){.fab{bottom:84px}}
+
+/* ===== CARDS / PANELS ===== */
+.panel{background:var(--panel);border:1px solid var(--borde);border-radius:var(--radius);padding:16px;box-shadow:var(--sombra)}
+.section-title{font-size:18px;text-transform:uppercase;color:var(--blanco);margin:22px 0 12px;display:flex;align-items:center;gap:8px}
+.section-title .bar{width:5px;height:20px;background:var(--amarillo);border-radius:3px;display:inline-block}
+
+/* KPI */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.kpi{
+  background:linear-gradient(160deg,var(--panel),var(--negro2));
+  border:1px solid var(--borde);border-left:4px solid var(--amarillo);
+  border-radius:var(--radius);padding:14px 16px;
+}
+.kpi .kpi-label{font-size:12px;color:var(--metal);text-transform:uppercase;font-weight:600;letter-spacing:.4px}
+.kpi .kpi-num{font-size:30px;font-weight:700;color:var(--blanco);margin-top:4px}
+.kpi.red{border-left-color:var(--rojo)} .kpi.red .kpi-num{color:var(--rojo)}
+.kpi.green{border-left-color:var(--verde)} .kpi.green .kpi-num{color:var(--verde)}
+.kpi.orange{border-left-color:var(--naranja)} .kpi.orange .kpi-num{color:var(--naranja)}
+.kpi.blue{border-left-color:var(--azul)} .kpi.blue .kpi-num{color:var(--azul)}
+.kpi .kpi-sub{font-size:11px;color:var(--metal);margin-top:2px}
+
+/* sugerencias */
+.sugerencia{
+  background:linear-gradient(135deg,#e8f0fe,#ffffff);
+  border:1px solid #b9cffb;border-left:4px solid var(--amarillo);
+  border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+}
+.sugerencia .txt{flex:1;min-width:200px;font-size:14px}
+.sugerencia.riesgo{border-left-color:var(--rojo);border-color:#f3b5b5;background:linear-gradient(135deg,#fdecec,#ffffff)}
+
+/* charts */
+.charts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:14px}
+.chart-title{font-size:13px;text-transform:uppercase;color:var(--metal2);font-weight:700;margin-bottom:12px;letter-spacing:.5px}
+.hbar-row{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+.hbar-row .lbl{width:90px;font-size:12px;color:var(--metal2);text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hbar-row .track{flex:1;background:var(--negro2);border-radius:6px;height:22px;overflow:hidden}
+.hbar-row .fill{height:100%;background:linear-gradient(90deg,var(--amarillo),var(--amarillo2));border-radius:6px;min-width:3px;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;font-size:11px;font-weight:700;color:#fff}
+.vbars{display:flex;align-items:flex-end;gap:8px;height:120px}
+.vbars .vb{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;height:100%;justify-content:flex-end}
+.vbars .vb .bar{width:100%;max-width:46px;background:linear-gradient(180deg,var(--amarillo2),var(--amarillo));border-radius:6px 6px 0 0;min-height:3px}
+.vbars .vb .v{font-size:11px;font-weight:700;color:var(--amarillo)}
+.vbars .vb .l{font-size:10px;color:var(--metal)}
+
+/* rankings */
+.rank-list{list-style:none}
+.rank-list li{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--borde);font-size:14px}
+.rank-list li:last-child{border-bottom:none}
+.rank-pos{width:26px;height:26px;border-radius:50%;background:var(--panel2);color:var(--metal2);font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.rank-list li:nth-child(1) .rank-pos{background:var(--amarillo);color:#fff}
+.rank-list li:nth-child(2) .rank-pos{background:var(--metal2);color:#fff}
+.rank-list li:nth-child(3) .rank-pos{background:#b87333;color:#fff}
+.rank-list .rk-val{margin-left:auto;font-weight:700;color:var(--amarillo)}
+
+/* badges */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:700}
+.b-alta{background:rgba(224,49,49,.1);color:var(--rojo);border:1px solid rgba(224,49,49,.35)}
+.b-media{background:rgba(232,89,12,.1);color:var(--naranja);border:1px solid rgba(232,89,12,.35)}
+.b-baja{background:rgba(25,113,194,.1);color:var(--azul);border:1px solid rgba(25,113,194,.35)}
+.b-pendiente{background:rgba(122,130,148,.12);color:var(--metal2);border:1px solid var(--borde)}
+.b-programado{background:rgba(30,110,247,.1);color:var(--amarillo);border:1px solid rgba(30,110,247,.35)}
+.b-despacho{background:rgba(25,113,194,.1);color:var(--azul);border:1px solid rgba(25,113,194,.35)}
+.b-entregado{background:rgba(31,157,85,.1);color:var(--verde);border:1px solid rgba(31,157,85,.35)}
+.semaforo{font-size:14px}
+
+/* ===== PEDIDOS LIST ===== */
+.filtros{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:14px}
+.filtros input,.filtros select{
+  background:var(--panel);border:1px solid var(--borde);color:var(--blanco);
+  border-radius:10px;padding:11px 12px;font-size:14px;font-family:inherit;width:100%;
+}
+.filtros input::placeholder{color:var(--metal)}
+.pedido-card{
+  background:var(--panel);border:1px solid var(--borde);border-radius:var(--radius);
+  padding:14px 16px;margin-bottom:10px;cursor:pointer;transition:border-color .15s;
+  border-left:5px solid var(--metal);
+}
+.pedido-card:hover{border-color:var(--amarillo)}
+.pedido-card.al-rojo{border-left-color:var(--rojo)}
+.pedido-card.al-amarillo{border-left-color:var(--naranja)}
+.pedido-card.al-verde{border-left-color:var(--verde)}
+.pc-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pc-num{font-weight:700;color:var(--amarillo);font-size:15px}
+.pc-cliente{font-weight:600;font-size:15px}
+.pc-monto{margin-left:auto;font-family:'Oswald';font-size:19px;font-weight:600}
+.pc-info{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;font-size:12.5px;color:var(--metal2)}
+.pc-info span b{color:var(--blanco);font-weight:600}
+.zona-group-head{
+  display:flex;align-items:center;gap:10px;margin:18px 0 10px;padding:10px 14px;
+  background:var(--panel2);border-radius:10px;border-left:4px solid var(--amarillo);
+  flex-wrap:wrap;
+}
+.zona-group-head h3{font-size:16px;text-transform:uppercase}
+.zona-group-head .zg-meta{font-size:13px;color:var(--metal2)}
+.zona-group-head .btn{margin-left:auto}
+
+/* ===== KANBAN ===== */
+.kanban{display:flex;gap:12px;overflow-x:auto;padding-bottom:10px;align-items:flex-start}
+.kcol{min-width:265px;width:265px;flex-shrink:0;background:var(--negro2);border:1px solid var(--borde);border-radius:var(--radius)}
+.kcol-head{padding:12px 14px;border-bottom:2px solid var(--borde);display:flex;align-items:center;gap:8px}
+.kcol-head .col-title{font-size:14px;text-transform:uppercase;font-weight:600}
+.kcol-head .count{margin-left:auto;background:var(--panel2);border-radius:12px;padding:2px 10px;font-size:12px;font-weight:700;color:var(--metal2)}
+.kcol[data-st="Pendiente de programación"] .kcol-head{border-bottom-color:var(--metal)}
+.kcol[data-st="Programado"] .kcol-head{border-bottom-color:var(--amarillo)}
+.kcol[data-st="En despacho"] .kcol-head{border-bottom-color:var(--azul)}
+.kcol[data-st="Entregado"] .kcol-head{border-bottom-color:var(--verde)}
+.kcol-body{padding:10px;display:flex;flex-direction:column;gap:8px;min-height:60px;max-height:65vh;overflow-y:auto}
+.kcard{
+  background:var(--panel);border:1px solid var(--borde);border-radius:11px;padding:11px 12px;
+  cursor:pointer;font-size:13px;
+}
+.kcard:hover{border-color:var(--amarillo)}
+.kcard .kc-top{display:flex;align-items:center;gap:6px}
+.kcard .kc-num{color:var(--amarillo);font-weight:700}
+.kcard .kc-monto{margin-left:auto;font-weight:700}
+.kcard .kc-cli{font-weight:600;margin:4px 0 2px}
+.kcard .kc-meta{color:var(--metal);font-size:11.5px;display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+.kcard .kc-actions{display:flex;gap:6px;margin-top:8px}
+.kcard .kc-actions button{
+  flex:1;background:var(--panel2);border:1px solid var(--borde);color:var(--metal2);
+  border-radius:7px;padding:6px;font-size:11.5px;font-weight:600;cursor:pointer;font-family:inherit;
+}
+.kcard .kc-actions button:hover{background:var(--amarillo);color:#fff}
+
+/* ===== CALENDARIO ===== */
+.cal-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.cal-head h2{font-size:20px;text-transform:capitalize;min-width:170px}
+.cal-nav{display:flex;gap:6px}
+.cal-nav button,.cal-mode button{
+  background:var(--panel);border:1px solid var(--borde);color:var(--blanco);border-radius:9px;
+  padding:9px 14px;cursor:pointer;font-family:inherit;font-weight:600;font-size:14px;
+}
+.cal-mode{display:flex;gap:6px;margin-left:auto}
+.cal-mode button.active{background:var(--amarillo);color:#fff;border-color:var(--amarillo)}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.cal-dow{text-align:center;font-size:11px;color:var(--metal);font-weight:700;text-transform:uppercase;padding:4px 0}
+.cal-cell{
+  background:var(--panel);border:1px solid var(--borde);border-radius:9px;min-height:74px;
+  padding:5px 6px;cursor:pointer;font-size:12px;position:relative;
+}
+.cal-cell:hover{border-color:var(--amarillo)}
+.cal-cell.otro-mes{opacity:.3}
+.cal-cell.hoy{border-color:var(--amarillo);box-shadow:inset 0 0 0 1px var(--amarillo)}
+.cal-cell.sel{background:var(--panel2);border-color:var(--amarillo)}
+.cal-cell .dnum{font-weight:700;color:var(--metal2)}
+.cal-cell.hoy .dnum{color:var(--amarillo)}
+.cal-dots{display:flex;gap:3px;flex-wrap:wrap;margin-top:4px}
+.cal-dots .d{width:8px;height:8px;border-radius:50%}
+.d-prog{background:var(--amarillo)} .d-prom{background:var(--naranja)} .d-ped{background:var(--metal)} .d-ent{background:var(--verde)}
+.cal-leyenda{display:flex;gap:16px;flex-wrap:wrap;margin:12px 0;font-size:12.5px;color:var(--metal2)}
+.cal-leyenda span{display:flex;align-items:center;gap:6px}
+.cal-leyenda .d{width:10px;height:10px;border-radius:50%;display:inline-block}
+.agenda-dia{margin-top:6px}
+.agenda-fecha{font-size:15px;font-weight:700;color:var(--amarillo);margin:14px 0 8px;text-transform:capitalize}
+.agenda-item{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--borde);border-radius:10px;padding:10px 13px;margin-bottom:7px;cursor:pointer;font-size:13.5px;flex-wrap:wrap}
+.agenda-item:hover{border-color:var(--amarillo)}
+.tag-evento{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:10px;text-transform:uppercase}
+.te-prog{background:rgba(30,110,247,.12);color:var(--amarillo)}
+.te-prom{background:rgba(232,89,12,.12);color:var(--naranja)}
+.te-ped{background:rgba(122,130,148,.15);color:var(--metal2)}
+.te-ent{background:rgba(31,157,85,.12);color:var(--verde)}
+
+/* ===== MODALES ===== */
+.overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:100;display:none;
+  align-items:flex-end;justify-content:center;backdrop-filter:blur(3px);
+}
+.overlay.open{display:flex}
+@media(min-width:700px){.overlay{align-items:center}}
+.modal{
+  background:var(--negro2);border:1px solid var(--borde);border-top:4px solid var(--amarillo);
+  width:100%;max-width:640px;max-height:92vh;overflow-y:auto;
+  border-radius:18px 18px 0 0;padding:20px;
+}
+@media(min-width:700px){.modal{border-radius:16px}}
+.modal h2{font-size:20px;text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:10px}
+.modal h2 .x{margin-left:auto;background:var(--panel);border:1px solid var(--borde);color:var(--metal2);width:38px;height:38px;border-radius:10px;font-size:17px;cursor:pointer}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-grid .full{grid-column:1/-1}
+@media(max-width:560px){.form-grid{grid-template-columns:1fr}}
+.fld label{display:block;font-size:12px;font-weight:700;color:var(--metal2);text-transform:uppercase;margin-bottom:5px;letter-spacing:.3px}
+.fld label .req{color:var(--amarillo)}
+.fld input,.fld select,.fld textarea{
+  width:100%;background:var(--panel);border:1px solid var(--borde);color:var(--blanco);
+  border-radius:10px;padding:12px;font-size:15px;font-family:inherit;
+}
+.fld input:focus,.fld select:focus,.fld textarea:focus{outline:none;border-color:var(--amarillo)}
+.detalle-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;margin-bottom:14px}
+.detalle-grid .full{grid-column:1/-1}
+.dt label{font-size:11px;color:var(--metal);text-transform:uppercase;font-weight:700;display:block}
+.dt div{font-size:14.5px;margin-top:2px}
+.estado-flow{display:flex;gap:4px;margin:14px 0;flex-wrap:wrap}
+.estado-flow .step{
+  flex:1;min-width:90px;text-align:center;padding:8px 4px;font-size:11px;font-weight:700;
+  background:var(--panel);border:1px solid var(--borde);color:var(--metal);border-radius:8px;
+}
+.estado-flow .step.done{background:rgba(30,110,247,.1);color:var(--amarillo);border-color:rgba(30,110,247,.35)}
+.estado-flow .step.now{background:var(--amarillo);color:#fff;border-color:var(--amarillo)}
+
+/* notificaciones */
+.notif-panel{
+  position:fixed;top:64px;right:12px;z-index:90;width:340px;max-width:calc(100vw - 24px);
+  background:var(--negro2);border:1px solid var(--borde);border-top:3px solid var(--amarillo);
+  border-radius:14px;box-shadow:var(--sombra);display:none;max-height:60vh;overflow-y:auto;
+}
+.notif-panel.open{display:block}
+.notif-panel .np-head{padding:12px 14px;font-weight:700;border-bottom:1px solid var(--borde);display:flex;align-items:center}
+.notif-item{padding:11px 14px;border-bottom:1px solid var(--borde);font-size:13px;display:flex;gap:9px}
+.notif-item.nueva{background:rgba(30,110,247,.06)}
+.notif-item .nt{color:var(--metal);font-size:11px;margin-top:3px}
+.notif-vacio{padding:20px;text-align:center;color:var(--metal);font-size:13px}
+
+/* toast */
+#toast{
+  position:fixed;left:50%;transform:translateX(-50%);bottom:24px;z-index:200;
+  background:var(--amarillo);color:#fff;font-weight:700;padding:13px 22px;border-radius:12px;
+  box-shadow:var(--sombra);display:none;font-size:14px;max-width:90vw;text-align:center;
+}
+@media(max-width:760px){#toast{bottom:96px}}
+
+.vacio{padding:30px;text-align:center;color:var(--metal);font-size:14px}
+.hidden{display:none !important}
+.mini-help{font-size:12px;color:var(--metal);margin-top:6px}
+
+/* nube / config */
+.nube-chip{font-size:12px;font-weight:700;background:var(--panel2);border:1px solid var(--borde);color:var(--metal2);border-radius:20px;padding:8px 12px;cursor:pointer;white-space:nowrap}
+.nube-chip.ok{color:var(--verde);border-color:rgba(31,157,85,.4);background:rgba(31,157,85,.08)}
+.nube-chip.err{color:var(--rojo);border-color:rgba(224,49,49,.4);background:rgba(224,49,49,.08)}
+.cfg-sql{background:var(--panel2);border:1px solid var(--borde);border-radius:10px;padding:10px;font-size:11.5px;overflow-x:auto;margin:8px 0;white-space:pre}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand"><span class="logo">⚡D</span>DESPACHOS<span class="pro">PRO</span></div>
+  <div class="header-right">
+    <span class="nube-chip" id="nubeChip" onclick="abrirConfig()">💾 Local</span>
+    <select id="roleSelect" class="role-select" onchange="cambiarUsuario(this.value)"></select>
+    <button class="bell" onclick="toggleNotifs()">🔔<span class="dot hidden" id="notifDot">0</span></button>
+    <button class="bell" onclick="abrirConfig()" title="Configuración y respaldos">⚙️</button>
+  </div>
+</header>
+
+<nav class="tabs" id="tabsTop"></nav>
+
+<div class="notif-panel" id="notifPanel">
+  <div class="np-head">🔔 Notificaciones <button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="marcarLeidas()">Marcar leídas</button></div>
+  <div id="notifList"></div>
+</div>
+
+<main>
+  <!-- ============ DASHBOARD ============ -->
+  <div class="view" id="view-dashboard">
+    <div id="sugerenciasBox"></div>
+
+    <div class="section-title"><span class="bar"></span>Indicadores principales</div>
+    <div class="kpi-grid" id="kpiGrid"></div>
+
+    <div class="section-title"><span class="bar"></span>Cumplimiento y tiempos</div>
+    <div class="kpi-grid" id="kpiGrid2"></div>
+
+    <div class="section-title" style="color:var(--rojo)"><span class="bar" style="background:var(--rojo)"></span>🚨 Pedidos críticos</div>
+    <div id="criticosBox"></div>
+
+    <div class="section-title"><span class="bar"></span>Gráficos</div>
+    <div class="charts-grid" id="chartsGrid"></div>
+
+    <div class="section-title"><span class="bar"></span>Rankings</div>
+    <div class="charts-grid" id="ranksGrid"></div>
+  </div>
+
+  <!-- ============ PEDIDOS ============ -->
+  <div class="view" id="view-pedidos">
+    <div class="filtros">
+      <input id="fBuscar" placeholder="🔍 Buscar cliente o # pedido" oninput="renderPedidos()">
+      <select id="fZona" onchange="renderPedidos()"><option value="">Zona: todas</option></select>
+      <select id="fEstado" onchange="renderPedidos()"><option value="">Estado: todos</option></select>
+      <select id="fVendedor" onchange="renderPedidos()"><option value="">Vendedor: todos</option></select>
+      <select id="fPrioridad" onchange="renderPedidos()">
+        <option value="">Prioridad: todas</option><option>Alta</option><option>Media</option><option>Baja</option>
+      </select>
+      <select id="fOrden" onchange="renderPedidos()">
+        <option value="auto">Orden: prioridad automática</option>
+        <option value="fecha">Fecha de pedido</option>
+        <option value="monto">Monto (mayor primero)</option>
+        <option value="prometida">Fecha prometida</option>
+      </select>
+    </div>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--metal2);margin-bottom:12px;cursor:pointer">
+      <input type="checkbox" id="fAgrupar" onchange="renderPedidos()" style="width:18px;height:18px;accent-color:var(--amarillo)"> Agrupar por zona
+    </label>
+    <div id="pedidosList"></div>
+  </div>
+
+  <!-- ============ KANBAN ============ -->
+  <div class="view" id="view-kanban">
+    <div class="kanban" id="kanbanBoard"></div>
+  </div>
+
+  <!-- ============ CALENDARIO ============ -->
+  <div class="view" id="view-calendario">
+    <div class="cal-head">
+      <div class="cal-nav">
+        <button onclick="calMover(-1)">‹</button>
+        <button onclick="calHoy()">Hoy</button>
+        <button onclick="calMover(1)">›</button>
+      </div>
+      <h2 id="calTitulo"></h2>
+      <div class="cal-mode">
+        <button id="cm-mes" class="active" onclick="calModo('mes')">Mes</button>
+        <button id="cm-semana" onclick="calModo('semana')">Semana</button>
+        <button id="cm-dia" onclick="calModo('dia')">Día</button>
+      </div>
+    </div>
+    <div class="cal-leyenda">
+      <span><span class="d d-ped"></span>Fecha de pedido</span>
+      <span><span class="d d-prom"></span>Fecha prometida</span>
+      <span><span class="d d-prog"></span>Despacho programado</span>
+      <span><span class="d d-ent"></span>Entregado</span>
+    </div>
+    <div id="calBody"></div>
+    <div class="agenda-dia" id="calAgenda"></div>
+  </div>
+</main>
+
+<button class="btn btn-yellow fab" id="fabNuevo" onclick="abrirNuevo()">＋ Nuevo pedido</button>
+
+<!-- modal nuevo pedido -->
+<div class="overlay" id="ovNuevo">
+  <div class="modal">
+    <h2>📝 Nuevo pedido <button class="x" onclick="cerrar('ovNuevo')">✕</button></h2>
+    <form id="formNuevo" onsubmit="guardarPedido(event)">
+      <div class="form-grid">
+        <div class="fld full"><label>Cliente <span class="req">*</span></label><input name="cliente" required placeholder="Ej: Ferretería El Constructor"></div>
+        <div class="fld"><label>Sucursal</label><input name="sucursal" placeholder="Ej: Centro"></div>
+        <div class="fld"><label>Zona <span class="req">*</span></label><select name="zona" id="selZonaNuevo" required></select></div>
+        <div class="fld full"><label>Dirección de entrega <span class="req">*</span></label><input name="direccion" required placeholder="Calle, número, referencia"></div>
+        <div class="fld"><label>Monto ($) <span class="req">*</span></label><input name="monto" type="number" min="0" step="0.01" required placeholder="0.00"></div>
+        <div class="fld"><label>Prioridad <span class="req">*</span></label>
+          <select name="prioridad" required><option>Media</option><option>Alta</option><option>Baja</option></select></div>
+        <div class="fld"><label>Teléfono principal <span class="req">*</span></label><input name="tel1" required placeholder="7777-0000"></div>
+        <div class="fld"><label>Teléfono secundario</label><input name="tel2" placeholder="Opcional"></div>
+        <div class="fld"><label>Fecha prometida al cliente <span class="req">*</span></label><input name="fechaPrometida" type="date" required></div>
+        <div class="fld"><label>Vendedor</label><select name="vendedor" id="selVendNuevo"></select></div>
+        <div class="fld full"><label>Observaciones</label><textarea name="observaciones" rows="2" placeholder="Notas para el despacho..."></textarea></div>
+      </div>
+      <p class="mini-help">La fecha prometida activa las alertas automáticas 🟢🟡🔴.</p>
+      <button type="submit" class="btn btn-yellow btn-block" style="margin-top:14px">✓ Registrar pedido</button>
+    </form>
+  </div>
+</div>
+
+<!-- modal detalle -->
+<div class="overlay" id="ovDetalle"><div class="modal" id="detalleBody"></div></div>
+
+<!-- modal programar zona -->
+<div class="overlay" id="ovZona">
+  <div class="modal">
+    <h2>🚚 Programar zona <button class="x" onclick="cerrar('ovZona')">✕</button></h2>
+    <div id="zonaResumen" style="margin-bottom:14px;font-size:14px;color:var(--metal2)"></div>
+    <div class="fld"><label>Fecha de despacho para todos</label><input type="date" id="zonaFecha"></div>
+    <button class="btn btn-yellow btn-block" style="margin-top:14px" onclick="confirmarZona()">✓ Programar todos</button>
+  </div>
+</div>
+
+<!-- modal configuración -->
+<div class="overlay" id="ovConfig">
+  <div class="modal">
+    <h2>⚙️ Configuración <button class="x" onclick="cerrar('ovConfig')">✕</button></h2>
+
+    <div class="chart-title">💾 Respaldo de datos</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px">
+      <button class="btn btn-yellow btn-sm" onclick="exportarJSON()">⬇️ Exportar respaldo</button>
+      <button class="btn btn-dark btn-sm" onclick="document.getElementById('impFile').click()">⬆️ Importar respaldo</button>
+      <button class="btn btn-dark btn-sm" onclick="exportarCSV()">📊 Exportar a Excel (CSV)</button>
+      <input type="file" id="impFile" accept=".json,application/json" class="hidden" onchange="importarJSON(this)">
+    </div>
+    <p class="mini-help">El respaldo descarga un archivo .json con todos los pedidos. Al importarlo se reemplazan los datos actuales.</p>
+    <button class="btn btn-ghost btn-sm" style="color:var(--rojo);border-color:rgba(224,49,49,.4);margin:8px 0 18px" onclick="borrarTodo()">🗑️ Borrar todos los datos (empezar de cero)</button>
+
+    <div class="chart-title">☁️ Nube — datos compartidos entre todos (Supabase)</div>
+    <div id="cfgEstado" style="font-size:13.5px;margin-bottom:10px;color:var(--metal2)"></div>
+    <div class="fld"><label>URL del proyecto</label><input id="cfgUrl" placeholder="https://xxxx.supabase.co"></div>
+    <div class="fld" style="margin-top:10px"><label>Clave anon (public)</label><input id="cfgKey" placeholder="eyJhbGciOi..."></div>
+    <button class="btn btn-yellow btn-block" style="margin-top:12px" onclick="nubeConectar()">☁️ Conectar</button>
+    <button class="btn btn-ghost btn-block hidden" id="cfgDesc" style="margin-top:8px" onclick="nubeDesconectar()">Desconectar nube (volver a datos locales)</button>
+
+    <details style="margin-top:16px;font-size:13.5px;color:var(--metal2)">
+      <summary style="cursor:pointer;font-weight:700;color:var(--blanco)">📖 ¿Cómo creo la nube gratis? (5 minutos, una sola vez)</summary>
+      <ol style="margin:10px 0 0 18px;line-height:1.7">
+        <li>Entra a <b>supabase.com</b>, crea una cuenta gratis y luego un proyecto nuevo (botón "New project").</li>
+        <li>En el menú izquierdo abre <b>SQL Editor</b>, pega este código y presiona <b>Run</b>:</li>
+      </ol>
+      <pre class="cfg-sql" id="sqlNube">create table pedidos (id text primary key, data jsonb not null);
+create table notifs (id text primary key, data jsonb not null);
+alter table pedidos enable row level security;
+alter table notifs enable row level security;
+create policy "acceso_app" on pedidos for all using (true) with check (true);
+create policy "acceso_app" on notifs for all using (true) with check (true);</pre>
+      <button class="btn btn-dark btn-sm" onclick="navigator.clipboard.writeText(document.getElementById('sqlNube').textContent);toast('📋 Código copiado')">📋 Copiar código</button>
+      <ol start="3" style="margin:10px 0 0 18px;line-height:1.7">
+        <li>Ve a <b>Project Settings → API</b> y copia la <b>Project URL</b> y la clave <b>anon public</b>.</li>
+        <li>Pégalas arriba y presiona <b>Conectar</b>.</li>
+        <li>En el celular o computadora de cada vendedor, abre la app, entra a ⚙️ y conecta con la <b>misma URL y clave</b>. ¡Todos verán los mismos pedidos!</li>
+      </ol>
+      <p class="mini-help">Nota: cualquier persona con la URL y la clave puede ver los datos. Compártelas solo con tu equipo.</p>
+    </details>
+  </div>
+</div>
+
+<nav class="bottom-nav" id="tabsBottom"></nav>
+<div id="toast"></div>
+
+<script>
+/* ================= DATOS ================= */
+const ESTADOS=['Pendiente de programación','Programado','En despacho','Entregado'];
+const ZONAS=['Santa Ana','San Salvador','Occidente','Oriente','La Libertad','San Miguel'];
+const VENDEDORES=['Carlos Ramírez','Ana López','Miguel Torres','Sofía Hernández'];
+const PRIOR_PESO={Alta:3,Media:2,Baja:1};
+
+const hoy=()=>{const d=new Date();d.setHours(0,0,0,0);return d};
+const fmtD=d=>d?new Date(d+'T00:00').toLocaleDateString('es-SV',{day:'2-digit',month:'2-digit',year:'numeric'}):'—';
+const fmt$=n=>'$'+Number(n).toLocaleString('es-SV',{minimumFractionDigits:2,maximumFractionDigits:2});
+const iso=d=>d.toISOString().slice(0,10);
+const diasDesdeHoy=f=>Math.round((new Date(f+'T00:00')-hoy())/864e5);
+const offDia=n=>{const d=hoy();d.setDate(d.getDate()+n);return iso(d)};
+
+function semilla(){
+  const ej=[
+    ['Ferretería El Constructor','Centro','Santa Ana','Av. Independencia #23',1850,'Alta','Carlos Ramírez','7711-2233','',-6,-1,null,null,'Pendiente de programación','Cliente requiere factura'],
+    ['Distribuidora Núñez','Norte','Santa Ana','Col. El Palmar, calle 5',920,'Media','Ana López','7722-3344','2440-1122',-4,2,null,null,'Pendiente de programación',''],
+    ['Taller Industrial Gómez','','Santa Ana','Carretera a Metapán km 4',3400,'Alta','Carlos Ramírez','7733-4455','',-3,1,null,null,'Pendiente de programación','Entregar en bodega trasera'],
+    ['Constructora Pacífico','Oficina central','San Salvador','Blvd. Los Héroes #110',7600,'Alta','Miguel Torres','7744-5566','2250-9090',-5,0,null,null,'Pendiente de programación','Generador 15kW — coordinar grúa'],
+    ['Ferretería La Económica','Sucursal 2','San Salvador','Col. Escalón, calle La Reforma',640,'Baja','Ana López','7755-6677','',-2,6,null,null,'Pendiente de programación',''],
+    ['AgroServicios del Valle','','Occidente','Ahuachapán, barrio El Centro',2150,'Media','Sofía Hernández','7766-7788','',-7,-2,null,null,'Pendiente de programación','Pedido con 2 soldadores'],
+    ['Maquinaria Sandoval','','Occidente','Sonsonate, av. Morazán',5300,'Alta','Sofía Hernández','7777-8899','2451-3344',-4,1,null,null,'Pendiente de programación',''],
+    ['Ferretería Cuscatlán','Centro','Occidente','Ahuachapán, 2a calle ote.',780,'Media','Carlos Ramírez','7788-9900','',-3,3,null,null,'Pendiente de programación',''],
+    ['Hotel Vista Hermosa','','Oriente','San Miguel, av. Roosevelt',1290,'Media','Miguel Torres','7799-0011','',-2,5,2,null,'Programado','Compresor para mantenimiento'],
+    ['Industrias Reyes','Planta 1','La Libertad','Zona franca, nave 7',9800,'Alta','Miguel Torres','7700-1122','2278-5566',-8,0,0,null,'En despacho','3 generadores — camión grande'],
+    ['Ferre Express','','La Libertad','Santa Tecla, paseo El Carmen',450,'Baja','Ana López','7811-2233','',-9,-3,-3,-3,'Entregado',''],
+    ['Constructora Andes','','San Salvador','Soyapango, blvd. del Ejército',3100,'Media','Carlos Ramírez','7822-3344','',-12,-5,-6,-5,'Entregado',''],
+    ['Taller Hermanos Pérez','','Oriente','Usulután, calle Grimaldi',1750,'Media','Sofía Hernández','7833-4455','',-10,-4,-4,-3,'Entregado','Entregado con 1 día de atraso'],
+    ['Megaferretería Central','Bodega','San Salvador','Apopa, carretera Troncal',2890,'Alta','Ana López','7844-5566','2216-7788',-11,-6,-7,-6,'Entregado',''],
+    ['Ferretería San Jorge','','San Miguel','San Miguel, 4a av. sur',1100,'Baja','Miguel Torres','7855-6677','',-1,7,null,null,'Pendiente de programación',''],
+    ['Talleres Unidos','','Santa Ana','Chalchuapa, calle central',2400,'Media','Sofía Hernández','7866-7788','',-2,4,3,null,'Programado',''],
+  ];
+  return ej.map((e,i)=>({
+    id:'p'+(i+1), numero:'PED-'+String(1001+i),
+    cliente:e[0],sucursal:e[1],zona:e[2],direccion:e[3],monto:e[4],prioridad:e[5],
+    vendedor:e[6],tel1:e[7],tel2:e[8],
+    fechaPedido:offDia(e[9]),fechaPrometida:offDia(e[10]),
+    fechaProgramada:e[11]===null?null:offDia(e[11]),
+    fechaEntrega:e[12]===null?null:offDia(e[12]),
+    estado:e[13],observaciones:e[14]
+  }));
+}
+
+let DB=JSON.parse(localStorage.getItem('despachosPro')||'null');
+if(!DB){DB={pedidos:semilla(),notifs:[],seq:1017};guardar();}
+function guardar(){localStorage.setItem('despachosPro',JSON.stringify(DB));nubeProgramarPush();}
+
+let usuario='admin'; // 'admin' o nombre de vendedor
+let vista='dashboard';
+const esAdmin=()=>usuario==='admin';
+const misPedidos=()=>esAdmin()?DB.pedidos:DB.pedidos.filter(p=>p.vendedor===usuario);
+
+/* ================= ALERTAS ================= */
+function alerta(p){
+  if(p.estado==='Entregado')return null;
+  const d=diasDesdeHoy(p.fechaPrometida);
+  if(d<1 && p.estado!=='En despacho' && p.estado!=='Entregado')return 'rojo';
+  if(d<1)return 'rojo';
+  if(d<=3 && p.estado==='Pendiente de programación')return 'amarillo';
+  return 'verde';
+}
+const semaforo=p=>{const a=alerta(p);return a==='rojo'?'🔴':a==='amarillo'?'🟡':a==='verde'?'🟢':'✅'};
+
+function ordenAuto(a,b){
+  const da=diasDesdeHoy(a.fechaPrometida),db=diasDesdeHoy(b.fechaPrometida);
+  if(da!==db)return da-db;
+  if(PRIOR_PESO[a.prioridad]!==PRIOR_PESO[b.prioridad])return PRIOR_PESO[b.prioridad]-PRIOR_PESO[a.prioridad];
+  if(a.fechaPedido!==b.fechaPedido)return a.fechaPedido<b.fechaPedido?-1:1;
+  return b.monto-a.monto;
+}
+
+/* ================= NAVEGACIÓN ================= */
+const TABS=[
+  {id:'dashboard',ic:'📊',lbl:'Dashboard',admin:true},
+  {id:'pedidos',ic:'📦',lbl:'Pedidos'},
+  {id:'kanban',ic:'🗂️',lbl:'Kanban'},
+  {id:'calendario',ic:'📅',lbl:'Calendario'},
+];
+function renderTabs(){
+  const ts=TABS.filter(t=>!t.admin||esAdmin());
+  document.getElementById('tabsTop').innerHTML=ts.map(t=>
+    `<button class="${vista===t.id?'active':''}" onclick="ir('${t.id}')">${t.ic} ${t.lbl}</button>`).join('');
+  document.getElementById('tabsBottom').innerHTML=ts.map(t=>
+    `<button class="${vista===t.id?'active':''}" onclick="ir('${t.id}')"><span class="ic">${t.ic}</span>${t.lbl}</button>`).join('');
+}
+function ir(v){
+  vista=v;
+  document.querySelectorAll('.view').forEach(e=>e.classList.remove('active'));
+  document.getElementById('view-'+v).classList.add('active');
+  renderTabs();renderVista();
+  window.scrollTo(0,0);
+}
+function renderVista(){
+  if(vista==='dashboard')renderDashboard();
+  if(vista==='pedidos')renderPedidos();
+  if(vista==='kanban')renderKanban();
+  if(vista==='calendario')renderCal();
+}
+
+function cambiarUsuario(u){
+  usuario=u;
+  if(!esAdmin()&&vista==='dashboard')vista='pedidos';
+  document.getElementById('view-dashboard').classList.toggle('active',vista==='dashboard');
+  document.getElementById('view-pedidos').classList.toggle('active',vista==='pedidos');
+  renderTabs();renderVista();renderNotifs();
+  toast(esAdmin()?'Modo Administrador':'Sesión: '+u+' (vendedor)');
+}
+
+/* ================= NOTIFICACIONES ================= */
+function notificar(para,texto){
+  DB.notifs.unshift({id:'n'+Date.now()+'-'+Math.floor(Math.random()*1e6),para,texto,fecha:new Date().toLocaleString('es-SV',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}),leida:false});
+  guardar();renderNotifs();
+}
+function notifsDe(){return DB.notifs.filter(n=>n.para===usuario||(esAdmin()&&n.para==='admin'))}
+function renderNotifs(){
+  const ns=notifsDe();
+  const noLeidas=ns.filter(n=>!n.leida).length;
+  const dot=document.getElementById('notifDot');
+  dot.textContent=noLeidas;dot.classList.toggle('hidden',noLeidas===0);
+  document.getElementById('notifList').innerHTML=ns.length?ns.slice(0,30).map(n=>
+    `<div class="notif-item ${n.leida?'':'nueva'}"><span>${n.texto.startsWith('📱')?'📱':'🔔'}</span><div>${n.texto}<div class="nt">${n.fecha}</div></div></div>`
+  ).join(''):'<div class="notif-vacio">Sin notificaciones</div>';
+}
+function toggleNotifs(){document.getElementById('notifPanel').classList.toggle('open')}
+function marcarLeidas(){notifsDe().forEach(n=>n.leida=true);guardar();renderNotifs();}
+
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.style.display='block';
+  clearTimeout(t._t);t._t=setTimeout(()=>t.style.display='none',3200);
+}
+
+/* WhatsApp */
+function enviarWhatsApp(p){
+  const msg=`Su pedido #${p.numero} ha sido programado para despacho el ${fmtD(p.fechaProgramada)}.`;
+  notificar(p.vendedor,`📱 WhatsApp enviado a ${p.cliente} (${p.tel1}): "${msg}"`);
+  const tel=p.tel1.replace(/\D/g,'');
+  window.open(`https://wa.me/503${tel}?text=${encodeURIComponent(msg)}`,'_blank');
+}
+
+/* ================= ACCIONES DE PEDIDO ================= */
+function abrirNuevo(){
+  document.getElementById('selZonaNuevo').innerHTML=ZONAS.map(z=>`<option>${z}</option>`).join('');
+  const sv=document.getElementById('selVendNuevo');
+  if(esAdmin()){sv.innerHTML=VENDEDORES.map(v=>`<option>${v}</option>`).join('');sv.disabled=false;}
+  else{sv.innerHTML=`<option>${usuario}</option>`;sv.disabled=true;}
+  document.getElementById('formNuevo').reset();
+  document.querySelector('#formNuevo [name=fechaPrometida]').min=iso(hoy());
+  abrir('ovNuevo');
+}
+function guardarPedido(ev){
+  ev.preventDefault();
+  const f=new FormData(ev.target);
+  /* numerar a partir del máximo existente para no chocar entre dispositivos */
+  const maxN=DB.pedidos.reduce((m,p)=>Math.max(m,parseInt(String(p.numero).replace(/\D/g,''))||0),1000);
+  const p={
+    id:'p'+Date.now()+'-'+Math.floor(Math.random()*1e6),numero:'PED-'+(maxN+1),
+    fechaPedido:iso(hoy()),
+    cliente:f.get('cliente'),sucursal:f.get('sucursal')||'',zona:f.get('zona'),
+    direccion:f.get('direccion'),monto:parseFloat(f.get('monto')),
+    prioridad:f.get('prioridad'),vendedor:esAdmin()?f.get('vendedor'):usuario,
+    tel1:f.get('tel1'),tel2:f.get('tel2')||'',
+    observaciones:f.get('observaciones')||'',
+    fechaPrometida:f.get('fechaPrometida'),
+    fechaProgramada:null,fechaEntrega:null,
+    estado:'Pendiente de programación'
+  };
+  DB.pedidos.unshift(p);guardar();
+  notificar('admin',`Nuevo pedido ${p.numero} de ${p.cliente} (${p.zona}) por ${fmt$(p.monto)} — vendedor ${p.vendedor}.`);
+  cerrar('ovNuevo');toast(`✓ Pedido ${p.numero} registrado`);renderVista();
+}
+
+function programarPedido(id,fecha){
+  const p=DB.pedidos.find(x=>x.id===id);if(!p||!fecha)return;
+  p.fechaProgramada=fecha;p.estado='Programado';guardar();
+  notificar(p.vendedor,`Tu pedido ${p.numero} (${p.cliente}) fue programado para despacho el ${fmtD(fecha)}.`);
+  notificar(p.vendedor,`📱 WhatsApp enviado a ${p.cliente} (${p.tel1}): "Su pedido #${p.numero} ha sido programado para despacho el ${fmtD(fecha)}."`);
+  toast(`🚚 ${p.numero} programado para ${fmtD(fecha)} · WhatsApp enviado`);
+  renderVista();
+}
+function cambiarEstado(id,nuevo){
+  const p=DB.pedidos.find(x=>x.id===id);if(!p)return;
+  p.estado=nuevo;
+  if(nuevo==='Entregado'&&!p.fechaEntrega)p.fechaEntrega=iso(hoy());
+  if(nuevo!=='Entregado')p.fechaEntrega=null;
+  if(nuevo==='Pendiente de programación'){p.fechaProgramada=null;}
+  guardar();
+  notificar(p.vendedor,`Pedido ${p.numero} (${p.cliente}) cambió a estado: ${nuevo}.`);
+  toast(`${p.numero} → ${nuevo}`);
+  renderVista();
+  if(document.getElementById('ovDetalle').classList.contains('open'))verDetalle(id);
+}
+function avanzar(id){
+  const p=DB.pedidos.find(x=>x.id===id);
+  const i=ESTADOS.indexOf(p.estado);
+  if(p.estado==='Pendiente de programación'){verDetalle(id);return;}
+  if(i<ESTADOS.length-1)cambiarEstado(id,ESTADOS[i+1]);
+}
+
+/* ================= DETALLE ================= */
+function verDetalle(id){
+  const p=DB.pedidos.find(x=>x.id===id);if(!p)return;
+  const a=alerta(p);
+  const stCls={'Pendiente de programación':'b-pendiente','Programado':'b-programado','En despacho':'b-despacho','Entregado':'b-entregado'};
+  const prCls={Alta:'b-alta',Media:'b-media',Baja:'b-baja'};
+  const dRest=diasDesdeHoy(p.fechaPrometida);
+  const alertaTxt=p.estado==='Entregado'?'✅ Entregado':
+    a==='rojo'?`🔴 Riesgo de atraso — fecha prometida ${dRest<0?'vencida hace '+(-dRest)+' día(s)':dRest===0?'es HOY':'en '+dRest+' día(s)'}`:
+    a==='amarillo'?`🟡 Atención — faltan ${dRest} día(s) y aún no está programado`:
+    `🟢 En tiempo — faltan ${dRest} día(s)`;
+  const flow=ESTADOS.map((e,i)=>{
+    const cur=ESTADOS.indexOf(p.estado);
+    return `<div class="step ${i<cur?'done':i===cur?'now':''}">${e.replace(' de programación','')}</div>`;
+  }).join('');
+
+  let acciones='';
+  if(esAdmin()){
+    if(p.estado==='Pendiente de programación'){
+      acciones=`
+        <div class="fld"><label>Asignar fecha de despacho</label>
+        <input type="date" id="dtFecha" min="${iso(hoy())}" value="${iso(hoy())}"></div>
+        <button class="btn btn-yellow btn-block" style="margin-top:10px"
+          onclick="programarPedido('${p.id}',document.getElementById('dtFecha').value);cerrar('ovDetalle')">🚚 Programar despacho</button>`;
+    }else if(p.estado==='Programado'){
+      acciones=`<button class="btn btn-yellow btn-block" onclick="cambiarEstado('${p.id}','En despacho')">▶ Iniciar despacho</button>
+        <button class="btn btn-ghost btn-block" style="margin-top:8px" onclick="cambiarEstado('${p.id}','Pendiente de programación')">↩ Volver a pendiente</button>`;
+    }else if(p.estado==='En despacho'){
+      acciones=`<button class="btn btn-green btn-block" onclick="cambiarEstado('${p.id}','Entregado')">✓ Marcar entregado</button>`;
+    }else{
+      acciones=`<button class="btn btn-ghost btn-block" onclick="cambiarEstado('${p.id}','En despacho')">↩ Reabrir (en despacho)</button>`;
+    }
+  }
+  const wsp=p.fechaProgramada?`<button class="btn btn-dark btn-block" style="margin-top:8px" onclick='enviarWhatsApp(${JSON.stringify(p).replace(/'/g,"&#39;")})'>📱 Reenviar WhatsApp al cliente</button>`:'';
+
+  document.getElementById('detalleBody').innerHTML=`
+    <h2>${p.numero} <button class="x" onclick="cerrar('ovDetalle')">✕</button></h2>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+      <span class="badge ${stCls[p.estado]}">${p.estado}</span>
+      <span class="badge ${prCls[p.prioridad]}">Prioridad ${p.prioridad}</span>
+    </div>
+    <div class="panel" style="margin-bottom:14px;font-size:14px;font-weight:600">${alertaTxt}</div>
+    <div class="estado-flow">${flow}</div>
+    <div class="detalle-grid">
+      <div class="dt full"><label>Cliente</label><div>${p.cliente}${p.sucursal?' — '+p.sucursal:''}</div></div>
+      <div class="dt"><label>Zona</label><div>${p.zona}</div></div>
+      <div class="dt"><label>Monto</label><div style="color:var(--amarillo);font-weight:700">${fmt$(p.monto)}</div></div>
+      <div class="dt full"><label>Dirección</label><div>${p.direccion}</div></div>
+      <div class="dt"><label>Vendedor</label><div>${p.vendedor}</div></div>
+      <div class="dt"><label>Teléfonos</label><div>${p.tel1}${p.tel2?' / '+p.tel2:''}</div></div>
+      <div class="dt"><label>Fecha de pedido</label><div>${fmtD(p.fechaPedido)}</div></div>
+      <div class="dt"><label>Fecha prometida</label><div style="font-weight:700">${fmtD(p.fechaPrometida)}</div></div>
+      <div class="dt"><label>Despacho programado</label><div>${fmtD(p.fechaProgramada)}</div></div>
+      <div class="dt"><label>Fecha real de entrega</label><div>${fmtD(p.fechaEntrega)}</div></div>
+      ${p.observaciones?`<div class="dt full"><label>Observaciones</label><div>${p.observaciones}</div></div>`:''}
+    </div>
+    ${acciones}${wsp}`;
+  abrir('ovDetalle');
+}
+
+/* ================= VISTA PEDIDOS ================= */
+function llenarFiltros(){
+  document.getElementById('fZona').innerHTML='<option value="">Zona: todas</option>'+ZONAS.map(z=>`<option>${z}</option>`).join('');
+  document.getElementById('fEstado').innerHTML='<option value="">Estado: todos</option>'+ESTADOS.map(e=>`<option>${e}</option>`).join('');
+  document.getElementById('fVendedor').innerHTML='<option value="">Vendedor: todos</option>'+VENDEDORES.map(v=>`<option>${v}</option>`).join('');
+}
+function pedidosFiltrados(){
+  const q=document.getElementById('fBuscar').value.toLowerCase();
+  const z=document.getElementById('fZona').value;
+  const e=document.getElementById('fEstado').value;
+  const v=document.getElementById('fVendedor').value;
+  const pr=document.getElementById('fPrioridad').value;
+  let ps=misPedidos().filter(p=>
+    (!q||p.cliente.toLowerCase().includes(q)||p.numero.toLowerCase().includes(q))&&
+    (!z||p.zona===z)&&(!e||p.estado===e)&&(!v||p.vendedor===v)&&(!pr||p.prioridad===pr));
+  const ord=document.getElementById('fOrden').value;
+  if(ord==='auto')ps.sort(ordenAuto);
+  if(ord==='fecha')ps.sort((a,b)=>a.fechaPedido<b.fechaPedido?-1:1);
+  if(ord==='monto')ps.sort((a,b)=>b.monto-a.monto);
+  if(ord==='prometida')ps.sort((a,b)=>a.fechaPrometida<b.fechaPrometida?-1:1);
+  return ps;
+}
+function cardPedido(p){
+  const stCls={'Pendiente de programación':'b-pendiente','Programado':'b-programado','En despacho':'b-despacho','Entregado':'b-entregado'};
+  const prCls={Alta:'b-alta',Media:'b-media',Baja:'b-baja'};
+  const a=alerta(p)||'';
+  return `<div class="pedido-card al-${a}" onclick="verDetalle('${p.id}')">
+    <div class="pc-top">
+      <span class="semaforo">${semaforo(p)}</span>
+      <span class="pc-num">${p.numero}</span>
+      <span class="pc-cliente">${p.cliente}</span>
+      <span class="pc-monto">${fmt$(p.monto)}</span>
+    </div>
+    <div class="pc-info">
+      <span>📍 <b>${p.zona}</b></span>
+      <span class="badge ${prCls[p.prioridad]}">${p.prioridad}</span>
+      <span class="badge ${stCls[p.estado]}">${p.estado}</span>
+      <span>👤 ${p.vendedor.split(' ')[0]}</span>
+      <span>🤝 Prometida: <b>${fmtD(p.fechaPrometida)}</b></span>
+      ${p.fechaProgramada?`<span>🚚 ${fmtD(p.fechaProgramada)}</span>`:''}
+    </div>
+  </div>`;
+}
+function renderPedidos(){
+  const ps=pedidosFiltrados();
+  const box=document.getElementById('pedidosList');
+  if(!ps.length){box.innerHTML='<div class="vacio">No hay pedidos con estos filtros.</div>';return;}
+  if(document.getElementById('fAgrupar').checked){
+    const porZona={};
+    ps.forEach(p=>{(porZona[p.zona]=porZona[p.zona]||[]).push(p)});
+    box.innerHTML=Object.entries(porZona).sort((a,b)=>b[1].length-a[1].length).map(([z,arr])=>{
+      const pend=arr.filter(p=>p.estado==='Pendiente de programación');
+      const tot=arr.reduce((s,p)=>s+p.monto,0);
+      const btn=(esAdmin()&&pend.length>=2)?`<button class="btn btn-yellow btn-sm" onclick="abrirZona('${z}')">🚚 Programar ${pend.length} pendientes</button>`:'';
+      return `<div class="zona-group-head"><h3>📍 ${z}</h3><span class="zg-meta">${arr.length} pedido(s) · ${fmt$(tot)}</span>${btn}</div>`+arr.map(cardPedido).join('');
+    }).join('');
+  }else{
+    box.innerHTML=ps.map(cardPedido).join('');
+  }
+}
+
+/* programar por zona */
+let zonaActiva=null;
+function abrirZona(z){
+  zonaActiva=z;
+  const pend=DB.pedidos.filter(p=>p.zona===z&&p.estado==='Pendiente de programación');
+  const tot=pend.reduce((s,p)=>s+p.monto,0);
+  document.getElementById('zonaResumen').innerHTML=
+    `Hay <b style="color:var(--amarillo)">${pend.length} pedidos en ${z}</b> por un monto total de <b style="color:var(--amarillo)">${fmt$(tot)}</b>. ¿Desea programarlos para la misma fecha?
+     <ul style="margin:10px 0 0 18px;color:var(--metal2);font-size:13px">${pend.map(p=>`<li>${p.numero} — ${p.cliente} (${fmt$(p.monto)})</li>`).join('')}</ul>`;
+  document.getElementById('zonaFecha').value=iso(hoy());
+  document.getElementById('zonaFecha').min=iso(hoy());
+  abrir('ovZona');
+}
+function confirmarZona(){
+  const f=document.getElementById('zonaFecha').value;if(!f)return;
+  const pend=DB.pedidos.filter(p=>p.zona===zonaActiva&&p.estado==='Pendiente de programación');
+  pend.forEach(p=>{
+    p.fechaProgramada=f;p.estado='Programado';
+    notificar(p.vendedor,`Tu pedido ${p.numero} (${p.cliente}) fue programado para despacho el ${fmtD(f)}.`);
+    notificar(p.vendedor,`📱 WhatsApp enviado a ${p.cliente} (${p.tel1}): "Su pedido #${p.numero} ha sido programado para despacho el ${fmtD(f)}."`);
+  });
+  guardar();cerrar('ovZona');
+  toast(`🚚 ${pend.length} pedidos de ${zonaActiva} programados para ${fmtD(f)}`);
+  renderVista();
+}
+
+/* ================= KANBAN ================= */
+function renderKanban(){
+  const ps=misPedidos();
+  document.getElementById('kanbanBoard').innerHTML=ESTADOS.map(st=>{
+    const arr=ps.filter(p=>p.estado===st).sort(ordenAuto);
+    const prCls={Alta:'b-alta',Media:'b-media',Baja:'b-baja'};
+    return `<div class="kcol" data-st="${st}">
+      <div class="kcol-head"><span class="col-title">${st}</span><span class="count">${arr.length}</span></div>
+      <div class="kcol-body">
+        ${arr.map(p=>{
+          const sigIdx=ESTADOS.indexOf(st)+1;
+          const btnAvanzar=esAdmin()&&st!=='Entregado'?
+            `<div class="kc-actions"><button onclick="event.stopPropagation();avanzar('${p.id}')">${st==='Pendiente de programación'?'📅 Programar':'→ '+ESTADOS[sigIdx].replace(' de programación','')}</button></div>`:'';
+          return `<div class="kcard" onclick="verDetalle('${p.id}')">
+            <div class="kc-top"><span>${semaforo(p)}</span><span class="kc-num">${p.numero}</span><span class="kc-monto">${fmt$(p.monto)}</span></div>
+            <div class="kc-cli">${p.cliente}</div>
+            <div><span class="badge ${prCls[p.prioridad]}">${p.prioridad}</span></div>
+            <div class="kc-meta"><span>📍 ${p.zona}</span><span>📆 ${fmtD(p.fechaPedido)}</span><span>👤 ${p.vendedor.split(' ')[0]}</span></div>
+            ${btnAvanzar}
+          </div>`;
+        }).join('')||'<div class="vacio" style="padding:14px;font-size:12px">Sin pedidos</div>'}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ================= CALENDARIO ================= */
+let calRef=hoy(),calM='mes',calSel=null;
+function calModo(m){calM=m;['mes','semana','dia'].forEach(x=>document.getElementById('cm-'+x).classList.toggle('active',x===m));renderCal();}
+function calMover(n){
+  if(calM==='mes')calRef.setMonth(calRef.getMonth()+n);
+  if(calM==='semana')calRef.setDate(calRef.getDate()+7*n);
+  if(calM==='dia')calRef.setDate(calRef.getDate()+n);
+  calSel=null;renderCal();
+}
+function calHoy(){calRef=hoy();calSel=iso(hoy());renderCal();}
+function eventosDia(f){
+  const evs=[];
+  misPedidos().forEach(p=>{
+    if(p.fechaPedido===f)evs.push({p,t:'ped',lbl:'Pedido'});
+    if(p.fechaPrometida===f&&p.estado!=='Entregado')evs.push({p,t:'prom',lbl:'Prometida'});
+    if(p.fechaProgramada===f&&p.estado!=='Entregado')evs.push({p,t:'prog',lbl:'Despacho'});
+    if(p.fechaEntrega===f)evs.push({p,t:'ent',lbl:'Entregado'});
+  });
+  return evs;
+}
+function renderCal(){
+  const t=document.getElementById('calTitulo'),body=document.getElementById('calBody');
+  const DOW=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+  if(calM==='mes'){
+    t.textContent=calRef.toLocaleDateString('es-SV',{month:'long',year:'numeric'});
+    const y=calRef.getFullYear(),m=calRef.getMonth();
+    const primero=new Date(y,m,1);
+    let ini=new Date(primero);ini.setDate(1-((primero.getDay()+6)%7));
+    let html='<div class="cal-grid">'+DOW.map(d=>`<div class="cal-dow">${d}</div>`).join('');
+    for(let i=0;i<42;i++){
+      const d=new Date(ini);d.setDate(ini.getDate()+i);
+      const f=iso(d);const evs=eventosDia(f);
+      const dots=[...new Set(evs.map(e=>e.t))].map(t2=>`<span class="d d-${t2}"></span>`).join('');
+      html+=`<div class="cal-cell ${d.getMonth()!==m?'otro-mes':''} ${f===iso(hoy())?'hoy':''} ${f===calSel?'sel':''}"
+        onclick="calSel='${f}';renderCal()"><span class="dnum">${d.getDate()}</span><div class="cal-dots">${dots}</div></div>`;
+    }
+    body.innerHTML=html+'</div>';
+    renderAgenda(calSel?[calSel]:[]);
+  }else{
+    const dias=[];
+    if(calM==='semana'){
+      const lun=new Date(calRef);lun.setDate(calRef.getDate()-((calRef.getDay()+6)%7));
+      for(let i=0;i<7;i++){const d=new Date(lun);d.setDate(lun.getDate()+i);dias.push(iso(d));}
+      t.textContent='Semana del '+fmtD(dias[0]);
+    }else{
+      dias.push(iso(calRef));
+      t.textContent=calRef.toLocaleDateString('es-SV',{weekday:'long',day:'numeric',month:'long'});
+    }
+    body.innerHTML='';
+    renderAgenda(dias,true);
+  }
+}
+function renderAgenda(fechas,mostrarVacios){
+  const box=document.getElementById('calAgenda');
+  if(!fechas.length){box.innerHTML='<div class="vacio">Toca un día del calendario para ver el detalle.</div>';return;}
+  box.innerHTML=fechas.map(f=>{
+    const evs=eventosDia(f);
+    if(!evs.length&&!mostrarVacios)return '';
+    const fechaTxt=new Date(f+'T00:00').toLocaleDateString('es-SV',{weekday:'long',day:'numeric',month:'long'});
+    return `<div class="agenda-fecha">${fechaTxt}${f===iso(hoy())?' · HOY':''}</div>`+
+      (evs.length?evs.map(e=>`
+        <div class="agenda-item" onclick="verDetalle('${e.p.id}')">
+          <span class="tag-evento te-${e.t}">${e.lbl}</span>
+          <b style="color:var(--amarillo)">${e.p.numero}</b> ${e.p.cliente}
+          <span style="color:var(--metal)">📍${e.p.zona}</span>
+          <span style="margin-left:auto;font-weight:700">${fmt$(e.p.monto)}</span>
+        </div>`).join(''):'<div class="vacio" style="padding:8px;font-size:13px">Sin eventos</div>');
+  }).join('');
+}
+
+/* ================= DASHBOARD ================= */
+function semanaActual(f){
+  const d=new Date(f+'T00:00');const h=hoy();
+  const lun=new Date(h);lun.setDate(h.getDate()-((h.getDay()+6)%7));
+  const dom=new Date(lun);dom.setDate(lun.getDate()+6);
+  return d>=lun&&d<=dom;
+}
+function prom(arr){return arr.length?Math.round(arr.reduce((s,x)=>s+x,0)/arr.length*10)/10:0}
+function diasEntre(a,b){return Math.round((new Date(b+'T00:00')-new Date(a+'T00:00'))/864e5)}
+
+function renderDashboard(){
+  const ps=DB.pedidos;
+  const pend=ps.filter(p=>p.estado==='Pendiente de programación');
+  const noEnt=ps.filter(p=>p.estado!=='Entregado');
+  const ent=ps.filter(p=>p.estado==='Entregado');
+  const rojos=noEnt.filter(p=>alerta(p)==='rojo');
+  const amarillos=noEnt.filter(p=>alerta(p)==='amarillo');
+  const vencidos=noEnt.filter(p=>diasDesdeHoy(p.fechaPrometida)<0);
+  const hoyProg=ps.filter(p=>p.fechaProgramada===iso(hoy())&&p.estado!=='Entregado');
+  const entSemana=ent.filter(p=>semanaActual(p.fechaEntrega));
+  const cumplidos=ent.filter(p=>p.fechaEntrega<=p.fechaPrometida);
+  const atrasosEnt=ent.filter(p=>p.fechaEntrega>p.fechaPrometida).map(p=>diasEntre(p.fechaPrometida,p.fechaEntrega));
+
+  /* KPIs principales */
+  document.getElementById('kpiGrid').innerHTML=`
+    <div class="kpi"><div class="kpi-label">Pedidos pendientes</div><div class="kpi-num">${pend.length}</div></div>
+    <div class="kpi orange"><div class="kpi-label">Monto por despachar</div><div class="kpi-num">${fmt$(noEnt.reduce((s,p)=>s+p.monto,0))}</div></div>
+    <div class="kpi green"><div class="kpi-label">Despachado esta semana</div><div class="kpi-num">${fmt$(entSemana.reduce((s,p)=>s+p.monto,0))}</div><div class="kpi-sub">${entSemana.length} entrega(s)</div></div>
+    <div class="kpi blue"><div class="kpi-label">Programados hoy</div><div class="kpi-num">${hoyProg.length}</div></div>
+    <div class="kpi red"><div class="kpi-label">Pedidos atrasados</div><div class="kpi-num">${vencidos.length}</div></div>
+    <div class="kpi"><div class="kpi-label">Prom. pedido → entrega</div><div class="kpi-num">${prom(ent.map(p=>diasEntre(p.fechaPedido,p.fechaEntrega)))} días</div></div>`;
+
+  /* KPIs adicionales */
+  const proxVencer=noEnt.filter(p=>{const d=diasDesdeHoy(p.fechaPrometida);return d>=0&&d<=3});
+  document.getElementById('kpiGrid2').innerHTML=`
+    <div class="kpi orange"><div class="kpi-label">Próximos a vencer (≤3d)</div><div class="kpi-num">${proxVencer.length}</div></div>
+    <div class="kpi red"><div class="kpi-label">Vencidos</div><div class="kpi-num">${vencidos.length}</div></div>
+    <div class="kpi green"><div class="kpi-label">% Cumplimiento</div><div class="kpi-num">${ent.length?Math.round(cumplidos.length/ent.length*100):0}%</div><div class="kpi-sub">${cumplidos.length}/${ent.length} a tiempo</div></div>
+    <div class="kpi"><div class="kpi-label">Prom. atraso</div><div class="kpi-num">${prom(atrasosEnt)} días</div></div>
+    <div class="kpi"><div class="kpi-label">Pedido → programación</div><div class="kpi-num">${prom(ps.filter(p=>p.fechaProgramada).map(p=>diasEntre(p.fechaPedido,p.fechaProgramada)))} días</div></div>
+    <div class="kpi"><div class="kpi-label">Programación → entrega</div><div class="kpi-num">${prom(ent.filter(p=>p.fechaProgramada).map(p=>diasEntre(p.fechaProgramada,p.fechaEntrega)))} días</div></div>`;
+
+  /* Sugerencias inteligentes */
+  let sugs='';
+  const riesgoPorZona={};
+  rojos.forEach(p=>{(riesgoPorZona[p.zona]=riesgoPorZona[p.zona]||[]).push(p)});
+  Object.entries(riesgoPorZona).forEach(([z,arr])=>{
+    sugs+=`<div class="sugerencia riesgo"><span style="font-size:22px">⚠️</span>
+      <div class="txt">Existen <b>${arr.length} pedido(s) en riesgo de atraso</b> para la zona <b>${z}</b>. Se recomienda programarlos para la próxima ruta disponible.</div>
+      ${arr.some(p=>p.estado==='Pendiente de programación')?`<button class="btn btn-yellow btn-sm" onclick="abrirZona('${z}')">Programar ahora</button>`:''}</div>`;
+  });
+  const altasProx=noEnt.filter(p=>p.prioridad==='Alta'&&diasDesdeHoy(p.fechaPrometida)<=2&&diasDesdeHoy(p.fechaPrometida)>=0);
+  if(altasProx.length)
+    sugs+=`<div class="sugerencia"><span style="font-size:22px">🔥</span><div class="txt">Existen <b>${altasProx.length} pedido(s) de prioridad alta</b> con fecha prometida en los próximos 2 días.</div></div>`;
+  const pendPorZona={};
+  pend.forEach(p=>{(pendPorZona[p.zona]=pendPorZona[p.zona]||[]).push(p)});
+  Object.entries(pendPorZona).filter(([,a])=>a.length>=3).forEach(([z,arr])=>{
+    const tot=arr.reduce((s,p)=>s+p.monto,0);
+    sugs+=`<div class="sugerencia"><span style="font-size:22px">💡</span>
+      <div class="txt">Hay <b>${arr.length} pedidos en ${z}</b> por un monto total de <b>${fmt$(tot)}</b>. ¿Desea programarlos para la misma fecha?</div>
+      <button class="btn btn-yellow btn-sm" onclick="abrirZona('${z}')">Sí, programar</button></div>`;
+  });
+  document.getElementById('sugerenciasBox').innerHTML=sugs;
+
+  /* críticos */
+  const criticos=[...new Set([
+    ...vencidos,
+    ...noEnt.filter(p=>p.prioridad==='Alta'),
+    ...proxVencer
+  ])].sort(ordenAuto);
+  document.getElementById('criticosBox').innerHTML=criticos.length?
+    criticos.slice(0,8).map(cardPedido).join(''):'<div class="vacio">🎉 Sin pedidos críticos</div>';
+
+  /* gráficos */
+  const cuenta=(arr,key)=>{const o={};arr.forEach(p=>o[p[key]]=(o[p[key]]||0)+1);return o};
+  const suma=(arr,key)=>{const o={};arr.forEach(p=>o[p[key]]=(o[p[key]]||0)+p.monto);return o};
+  const hbar=(obj,money)=>{
+    const max=Math.max(...Object.values(obj),1);
+    return Object.entries(obj).sort((a,b)=>b[1]-a[1]).map(([k,v])=>
+      `<div class="hbar-row"><span class="lbl" title="${k}">${k.split(' ')[0]}</span>
+       <div class="track"><div class="fill" style="width:${v/max*100}%">${money?fmt$(v).replace('.00',''):v}</div></div></div>`).join('');
+  };
+  /* entregas por semana + tendencia: últimas 5 semanas */
+  const sems=[];
+  for(let i=4;i>=0;i--){
+    const lun=hoy();lun.setDate(lun.getDate()-((lun.getDay()+6)%7)-7*i);
+    const dom=new Date(lun);dom.setDate(lun.getDate()+6);
+    const n=ent.filter(p=>{const d=new Date(p.fechaEntrega+'T00:00');return d>=lun&&d<=dom}).length;
+    const prog=ps.filter(p=>p.fechaProgramada&&(()=>{const d=new Date(p.fechaProgramada+'T00:00');return d>=lun&&d<=dom})()).length;
+    sems.push({lbl:lun.getDate()+'/'+(lun.getMonth()+1),ent:n,prog});
+  }
+  const vbar=(key)=>{const max=Math.max(...sems.map(s=>s[key]),1);
+    return `<div class="vbars">${sems.map(s=>`<div class="vb"><span class="v">${s[key]}</span><div class="bar" style="height:${s[key]/max*100}%"></div><span class="l">${s.lbl}</span></div>`).join('')}</div>`};
+
+  document.getElementById('chartsGrid').innerHTML=`
+    <div class="panel"><div class="chart-title">Pedidos por vendedor</div>${hbar(cuenta(ps,'vendedor'))}</div>
+    <div class="panel"><div class="chart-title">Monto por vendedor</div>${hbar(suma(ps,'vendedor'),true)}</div>
+    <div class="panel"><div class="chart-title">Pedidos por zona</div>${hbar(cuenta(ps,'zona'))}</div>
+    <div class="panel"><div class="chart-title">Entregas por semana</div>${vbar('ent')}</div>
+    <div class="panel"><div class="chart-title">Tendencia de despachos programados</div>${vbar('prog')}</div>`;
+
+  /* rankings */
+  const rank=(obj,money)=>`<ol class="rank-list">${Object.entries(obj).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([k,v],i)=>
+    `<li><span class="rank-pos">${i+1}</span>${k}<span class="rk-val">${money?fmt$(v):v}</span></li>`).join('')}</ol>`;
+  const cumpVend={},cumpZona={};
+  VENDEDORES.forEach(v=>{const e=ent.filter(p=>p.vendedor===v);if(e.length)cumpVend[v]=Math.round(e.filter(p=>p.fechaEntrega<=p.fechaPrometida).length/e.length*100)});
+  ZONAS.forEach(z=>{const e=ent.filter(p=>p.zona===z);if(e.length)cumpZona[z]=Math.round(e.filter(p=>p.fechaEntrega<=p.fechaPrometida).length/e.length*100)});
+  document.getElementById('ranksGrid').innerHTML=`
+    <div class="panel"><div class="chart-title">Vendedores por monto pendiente</div>${rank(suma(noEnt,'vendedor'),true)}</div>
+    <div class="panel"><div class="chart-title">Zonas con más pedidos</div>${rank(cuenta(ps,'zona'))}</div>
+    <div class="panel"><div class="chart-title">Clientes con más pedidos</div>${rank(cuenta(ps,'cliente'))}</div>
+    <div class="panel"><div class="chart-title">% Cumplimiento por vendedor</div>${Object.keys(cumpVend).length?rank(cumpVend):'<div class="vacio">Sin entregas aún</div>'}</div>
+    <div class="panel"><div class="chart-title">% Cumplimiento por zona</div>${Object.keys(cumpZona).length?rank(cumpZona):'<div class="vacio">Sin entregas aún</div>'}</div>`;
+}
+
+/* ================= RESPALDO (exportar / importar) ================= */
+function exportarJSON(){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(DB,null,2)],{type:'application/json'}));
+  a.download='respaldo-despachos-'+iso(hoy())+'.json';a.click();
+  toast('💾 Respaldo descargado');
+}
+function exportarCSV(){
+  const cols=['numero','fechaPedido','cliente','sucursal','zona','direccion','monto','prioridad','vendedor','tel1','tel2','fechaPrometida','fechaProgramada','fechaEntrega','estado','observaciones'];
+  const esc=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+  const csv='﻿'+cols.join(';')+'\n'+DB.pedidos.map(p=>cols.map(c=>esc(p[c])).join(';')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  a.download='pedidos-'+iso(hoy())+'.csv';a.click();
+  toast('📊 Archivo CSV descargado');
+}
+function importarJSON(input){
+  const f=input.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const d=JSON.parse(r.result);
+      if(!Array.isArray(d.pedidos))throw new Error('formato');
+      DB={pedidos:d.pedidos,notifs:Array.isArray(d.notifs)?d.notifs:[],seq:d.seq||1000};
+      localStorage.setItem('despachosPro',JSON.stringify(DB));
+      /* si hay nube: limpiarla primero para que no queden pedidos viejos mezclados */
+      nubeBorrarRemoto().then(()=>nubePush());
+      renderVista();renderNotifs();
+      cerrar('ovConfig');
+      toast('✓ Respaldo importado: '+DB.pedidos.length+' pedidos');
+    }catch(e){toast('⚠️ El archivo no es un respaldo válido');}
+  };
+  r.readAsText(f);input.value='';
+}
+
+/* ================= NUBE (Supabase) ================= */
+/* var + function para que guardar() pueda llamarlas aunque se ejecute antes (primera carga) */
+var nubeEstado='off'; /* off | ok | error */
+var pushT=null;
+var nubeUltimoError='';
+function nubeCfg(){return JSON.parse(localStorage.getItem('nubeCfg')||'null')}
+function nubeHdr(c){
+  const h={apikey:c.key,'Content-Type':'application/json'};
+  /* solo las claves antiguas (JWT, empiezan con "eyJ") van también en Authorization;
+     las nuevas sb_publishable_ se envían únicamente como apikey */
+  if(c.key.startsWith('eyJ'))h.Authorization='Bearer '+c.key;
+  return h;
+}
+async function nubeFetch(c,ruta,opciones){
+  const r=await fetch(c.url+ruta,opciones);
+  if(!r.ok){
+    let det='';try{det=(await r.text()).slice(0,200)}catch(e){}
+    throw new Error('HTTP '+r.status+' en '+ruta.split('?')[0]+(det?' — '+det:''));
+  }
+  return r;
+}
+function nubeChipRender(){
+  const el=document.getElementById('nubeChip');
+  const c=nubeCfg();
+  el.textContent=!c?'💾 Local':nubeEstado==='ok'?'☁️ Nube':nubeEstado==='error'?'⚠️ Sin conexión':'☁️ Conectando…';
+  el.className='nube-chip '+(c?(nubeEstado==='ok'?'ok':nubeEstado==='error'?'err':''):'');
+}
+function abrirConfig(){renderConfig();abrir('ovConfig');}
+function renderConfig(){
+  const c=nubeCfg();
+  document.getElementById('cfgEstado').innerHTML=c
+    ?(nubeEstado==='ok'
+      ?'✅ Conectado. Los pedidos se comparten con todos los dispositivos que usen esta misma nube.'
+      :'⚠️ Nube configurada pero sin conexión en este momento. Verifica tu internet o las credenciales.')
+    :'Sin configurar: los datos solo viven en este navegador. Sigue la guía de abajo para crear tu nube gratis.';
+  document.getElementById('cfgUrl').value=c?c.url:'';
+  document.getElementById('cfgKey').value=c?c.key:'';
+  document.getElementById('cfgDesc').classList.toggle('hidden',!c);
+}
+async function nubeConectar(){
+  let url=document.getElementById('cfgUrl').value.trim().replace(/\/+$/,'');
+  const key=document.getElementById('cfgKey').value.trim();
+  if(!url||!key){toast('⚠️ Completa la URL y la clave');return;}
+  if(!/^https?:\/\//.test(url))url='https://'+url;
+  /* la sección "Data API" de Supabase muestra la URL con /rest/v1 incluido: quitarlo */
+  url=url.replace(/\/rest\/v1\/?$/,'').replace(/\/+$/,'');
+  localStorage.setItem('nubeCfg',JSON.stringify({url,key}));
+  toast('Probando conexión…');
+  const ok=await nubeSync(true);
+  if(ok){toast('☁️ ¡Conectado! Los datos ahora se comparten.');cerrar('ovConfig');}
+  else{
+    localStorage.removeItem('nubeCfg');nubeEstado='off';nubeChipRender();renderConfig();
+    document.getElementById('cfgUrl').value=url;document.getElementById('cfgKey').value=key;
+    document.getElementById('cfgEstado').innerHTML=
+      '⚠️ <b>No se pudo conectar.</b> Detalle técnico: <span style="color:var(--rojo)">'+
+      (nubeUltimoError||'sin respuesta del servidor (¿URL correcta? ¿hay internet?)')+'</span>';
+    toast('⚠️ No se pudo conectar. Mira el detalle del error arriba.');
+  }
+}
+function nubeDesconectar(){
+  localStorage.removeItem('nubeCfg');nubeEstado='off';
+  nubeChipRender();renderConfig();
+  toast('Nube desconectada: usando solo datos locales');
+}
+async function nubeSync(inicial){
+  const c=nubeCfg();if(!c)return false;
+  try{
+    const r=await nubeFetch(c,'/rest/v1/pedidos?select=id,data',{headers:nubeHdr(c)});
+    const rows=await r.json();
+    const rn=await nubeFetch(c,'/rest/v1/notifs?select=id,data',{headers:nubeHdr(c)});
+    const rowsN=await rn.json();
+    if(inicial&&rows.length===0&&DB.pedidos.length){
+      await nubePush(); /* primera conexión y nube vacía: subir lo local */
+    }else{
+      const nuevos=rows.map(x=>x.data).sort((a,b)=>String(b.numero).localeCompare(String(a.numero)));
+      const nuevasN=rowsN.map(x=>x.data).sort((a,b)=>String(b.id).localeCompare(String(a.id)));
+      const cambio=JSON.stringify(nuevos)!==JSON.stringify(DB.pedidos)||JSON.stringify(nuevasN)!==JSON.stringify(DB.notifs);
+      if(cambio||inicial){
+        DB.pedidos=nuevos;DB.notifs=nuevasN;
+        localStorage.setItem('despachosPro',JSON.stringify(DB));
+        if(!document.querySelector('.overlay.open'))renderVista();
+        renderNotifs();
+      }
+    }
+    nubeEstado='ok';nubeUltimoError='';nubeChipRender();return true;
+  }catch(e){nubeEstado='error';nubeUltimoError=e.message||String(e);nubeChipRender();return false;}
+}
+async function nubePush(){
+  const c=nubeCfg();if(!c)return;
+  pushT=null;
+  try{
+    const opts=b=>({method:'POST',headers:{...nubeHdr(c),Prefer:'resolution=merge-duplicates'},body:JSON.stringify(b)});
+    if(DB.pedidos.length)
+      await nubeFetch(c,'/rest/v1/pedidos?on_conflict=id',opts(DB.pedidos.map(p=>({id:p.id,data:p}))));
+    if(DB.notifs.length){
+      await nubeFetch(c,'/rest/v1/notifs?on_conflict=id',opts(DB.notifs.slice(0,80).map(n=>({id:String(n.id),data:n}))));
+    }
+    nubeEstado='ok';nubeUltimoError='';
+  }catch(e){nubeEstado='error';nubeUltimoError=e.message||String(e);}
+  nubeChipRender();
+}
+function nubeProgramarPush(){
+  if(!nubeCfg())return;
+  clearTimeout(pushT);pushT=setTimeout(nubePush,600);
+}
+async function nubeBorrarRemoto(){
+  const c=nubeCfg();if(!c)return true;
+  try{
+    /* PostgREST exige un filtro para DELETE: id distinto de un valor imposible = todas las filas */
+    await nubeFetch(c,'/rest/v1/pedidos?id=neq.__ninguno__',{method:'DELETE',headers:nubeHdr(c)});
+    await nubeFetch(c,'/rest/v1/notifs?id=neq.__ninguno__',{method:'DELETE',headers:nubeHdr(c)});
+    return true;
+  }catch(e){nubeUltimoError=e.message||String(e);return false;}
+}
+async function borrarTodo(){
+  if(!confirm('¿Borrar TODOS los pedidos y notificaciones para empezar de cero?\n\nConsejo: exporta un respaldo antes, por si acaso.'))return;
+  if(nubeCfg()&&!confirm('También se borrarán de la nube (para todos los dispositivos conectados). ¿Continuar?'))return;
+  const ok=await nubeBorrarRemoto();
+  if(!ok){toast('⚠️ No se pudo borrar en la nube: '+nubeUltimoError);return;}
+  DB={pedidos:[],notifs:[],seq:1000};
+  localStorage.setItem('despachosPro',JSON.stringify(DB));
+  renderVista();renderNotifs();cerrar('ovConfig');
+  toast('🗑️ Listo: la app quedó vacía para empezar de cero');
+}
+/* refrescar desde la nube cada 15 s (si no hay ventanas abiertas ni cambios pendientes) */
+setInterval(()=>{
+  if(nubeCfg()&&!pushT&&!document.hidden&&!document.querySelector('.overlay.open'))nubeSync();
+},15000);
+
+/* ================= MODALES / INIT ================= */
+function abrir(id){document.getElementById(id).classList.add('open')}
+function cerrar(id){document.getElementById(id).classList.remove('open')}
+document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open')}));
+document.addEventListener('click',e=>{
+  const np=document.getElementById('notifPanel');
+  if(np.classList.contains('open')&&!np.contains(e.target)&&!e.target.closest('.bell'))np.classList.remove('open');
+});
+
+function init(){
+  document.getElementById('roleSelect').innerHTML=
+    `<option value="admin">👑 Administrador</option>`+VENDEDORES.map(v=>`<option value="${v}">👤 ${v}</option>`).join('');
+  llenarFiltros();
+  renderTabs();
+  calSel=iso(hoy());
+  ir('dashboard');
+  renderNotifs();
+  nubeChipRender();
+  if(nubeCfg())nubeSync(true);
+}
+init();
+</script>
+</body>
+</html>
