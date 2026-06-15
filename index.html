@@ -1210,7 +1210,7 @@ function importarJSON(input){
           claveAdmin:d.claveAdmin||DB.claveAdmin};
       localStorage.setItem('despachosPro',JSON.stringify(DB));
       /* si hay nube: limpiarla primero para que no queden pedidos viejos mezclados */
-      nubeBorrarRemoto().then(()=>nubePush());
+      nubeBorrarRemoto().then(()=>nubePush(true));
       renderVista();renderNotifs();
       cerrar('ovConfig');
       toast('✓ Respaldo importado: '+DB.pedidos.length+' pedidos');
@@ -1344,7 +1344,7 @@ async function nubeSync(inicial){
     const rn=await nubeFetch(c,'/rest/v1/notifs?select=id,data',{headers:nubeHdr(c)});
     const rowsN=await rn.json();
     if(inicial&&rows.length===0&&DB.pedidos.length){
-      await nubePush(); /* primera conexión y nube vacía: subir lo local */
+      await nubePush(true); /* primera conexión y nube vacía: subir todo, incluida la config */
     }else{
       const cfgRow=rows.find(x=>x.id==='__config__');
       const nuevos=rows.filter(x=>x.id!=='__config__').map(x=>x.data).sort((a,b)=>String(b.numero).localeCompare(String(a.numero)));
@@ -1372,13 +1372,15 @@ async function nubeSync(inicial){
     return true;
   }catch(e){nubeEstado='error';nubeUltimoError=e.message||String(e);nubeChipRender();return false;}
 }
-async function nubePush(){
+async function nubePush(incluirConfig){
   const c=nubeCfg();if(!c)return;
   pushT=null;
   try{
     const opts=b=>({method:'POST',headers:{...nubeHdr(c),Prefer:'resolution=merge-duplicates'},body:JSON.stringify(b)});
     const filas=DB.pedidos.map(p=>({id:p.id,data:p}));
-    filas.push({id:'__config__',data:{vendedores:DB.vendedores,zonas:DB.zonas,claveAdmin:DB.claveAdmin||null}});
+    /* La configuración del equipo (zonas, vendedores, clave) solo la escribe Gerencia.
+       Así los vendedores no pisan los cambios del administrador al subir sus pedidos. */
+    if(incluirConfig)filas.push({id:'__config__',data:{vendedores:DB.vendedores,zonas:DB.zonas,claveAdmin:DB.claveAdmin||null}});
     await nubeFetch(c,'/rest/v1/pedidos?on_conflict=id',opts(filas));
     if(DB.notifs.length){
       await nubeFetch(c,'/rest/v1/notifs?on_conflict=id',opts(DB.notifs.slice(0,80).map(n=>({id:String(n.id),data:n}))));
@@ -1389,7 +1391,8 @@ async function nubePush(){
 }
 function nubeProgramarPush(){
   if(!nubeCfg())return;
-  clearTimeout(pushT);pushT=setTimeout(nubePush,600);
+  const incluirConfig=esAdmin(); /* solo Gerencia sube cambios de zonas/vendedores/clave */
+  clearTimeout(pushT);pushT=setTimeout(()=>nubePush(incluirConfig),600);
 }
 async function nubeBorrarRemoto(){
   const c=nubeCfg();if(!c)return true;
