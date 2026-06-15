@@ -457,10 +457,15 @@ main{padding:18px 16px;max-width:1280px;margin:0 auto}
     <h2>📝 Nuevo pedido <button class="x" onclick="cerrar('ovNuevo')">✕</button></h2>
     <form id="formNuevo" onsubmit="guardarPedido(event)">
       <div class="form-grid">
+        <div class="fld full" id="boxClienteGuardado">
+          <label>📋 Cliente ya registrado</label>
+          <select id="selClienteExistente" onchange="elegirCliente(this.value)">
+            <option value="">— Elegir un cliente guardado —</option>
+          </select>
+          <p class="mini-help">Elige un cliente de la lista y se llenan sus datos solos. Si es nuevo, déjalo así y escríbelo abajo.</p>
+        </div>
         <div class="fld full"><label>Cliente <span class="req">*</span></label>
-          <input name="cliente" required placeholder="Escribe o elige un cliente guardado" list="listaClientes" autocomplete="off" oninput="autofillCliente(this.value)">
-          <datalist id="listaClientes"></datalist>
-          <p class="mini-help">Los clientes se guardan solos: al elegir uno ya registrado se llenan sus datos automáticamente.</p>
+          <input name="cliente" required placeholder="Nombre del cliente" autocomplete="off">
         </div>
         <div class="fld"><label>Sucursal</label><input name="sucursal" placeholder="Ej: Centro"></div>
         <div class="fld"><label>Zona <span class="req">*</span></label><select name="zona" id="selZonaNuevo" required></select></div>
@@ -751,12 +756,12 @@ function clientesGuardados(){
   [...DB.pedidos].sort((a,b)=>a.fechaPedido<b.fechaPedido?-1:1).forEach(p=>{m[p.cliente]=p});
   return m;
 }
-function autofillCliente(v){
-  const m=clientesGuardados();
-  const nombre=Object.keys(m).find(k=>k.toLowerCase()===v.trim().toLowerCase());
+function elegirCliente(nombre){
   if(!nombre)return;
-  const p=m[nombre];
+  const p=clientesGuardados()[nombre];
+  if(!p)return;
   const f=document.getElementById('formNuevo');
+  f.cliente.value=nombre;
   f.sucursal.value=p.sucursal||'';
   if(DB.zonas.includes(p.zona))f.zona.value=p.zona;
   f.direccion.value=p.direccion||'';
@@ -768,9 +773,13 @@ function abrirNuevo(){
   document.getElementById('selZonaNuevo').innerHTML=DB.zonas.map(z=>`<option>${z}</option>`).join('');
   const sv=document.getElementById('selVendNuevo');
   sv.innerHTML=DB.vendedores.map(v=>`<option>${v}</option>`).join('');
-  document.getElementById('listaClientes').innerHTML=
-    Object.keys(clientesGuardados()).sort().map(c=>`<option value="${c.replace(/"/g,'&quot;')}">`).join('');
   document.getElementById('formNuevo').reset();
+  /* poblar el desplegable de clientes guardados (después del reset) */
+  const clientes=Object.keys(clientesGuardados()).sort((a,b)=>a.localeCompare(b,'es'));
+  const sc=document.getElementById('selClienteExistente');
+  sc.innerHTML='<option value="">— Elegir un cliente guardado —</option>'+
+    clientes.map(c=>`<option value="${c.replace(/"/g,'&quot;')}">${c}</option>`).join('');
+  document.getElementById('boxClienteGuardado').style.display=clientes.length?'':'none';
   document.querySelector('#formNuevo [name=fechaPrometida]').min=iso(hoy());
   abrir('ovNuevo');
 }
