@@ -1291,7 +1291,9 @@ function renderConfig(){
   document.getElementById('cfgEstado').innerHTML=c
     ?(nubeEstado==='ok'
       ?'✅ Conectado. Los pedidos se comparten con todos los dispositivos que usen esta misma nube.'
-      :'⚠️ Nube configurada pero sin conexión en este momento. Verifica tu internet o las credenciales.')
+      :'⚠️ <b>Nube configurada pero sin conexión.</b> Detalle técnico: <span style="color:var(--rojo)">'+
+        (nubeUltimoError||'sin respuesta del servidor (¿internet? ¿proyecto de Supabase pausado?)')+'</span>'+
+        '<br><span class="mini-help">Causa más común: en el plan gratis, Supabase <b>pausa el proyecto tras ~1 semana sin uso</b>. Entra a supabase.com → tu proyecto → botón "Restore"/"Resume". Luego pulsa Conectar aquí abajo.</span>')
     :'Sin configurar: los datos solo viven en este navegador. Sigue la guía de abajo para crear tu nube gratis.';
   document.getElementById('cfgUrl').value=c?c.url:'';
   document.getElementById('cfgKey').value=c?c.key:'';
